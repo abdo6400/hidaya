@@ -8,6 +8,9 @@ class ChildModel {
   final bool isApproved;
   final String createdBy;
   final DateTime? createdAt;
+  final String? categoryId;
+  final String? sheikhId;
+  final DateTime? assignedAt;
 
   ChildModel({
     required this.id,
@@ -17,6 +20,9 @@ class ChildModel {
     required this.isApproved,
     required this.createdBy,
     this.createdAt,
+    this.categoryId,
+    this.sheikhId,
+    this.assignedAt,
   });
 
   factory ChildModel.fromDoc(DocumentSnapshot doc) {
@@ -28,6 +34,11 @@ class ChildModel {
       parentId: data['parentId'] ?? '',
       isApproved: data['isApproved'] ?? false,
       createdBy: data['createdBy'] ?? '',
+      categoryId: data['categoryId'],
+      sheikhId: data['sheikhId'],
+      assignedAt: data['assignedAt'] != null
+          ? DateTime.parse(data['assignedAt'])
+          : null,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
   }

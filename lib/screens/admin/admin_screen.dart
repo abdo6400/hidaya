@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/controllers/auth_controller.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
+import 'package:hidaya/screens/admin/assign_child_screen.dart';
 import 'package:hidaya/screens/admin/dashboard_screen.dart';
 import 'package:hidaya/screens/admin/parents_screen.dart';
 import 'package:quickalert/quickalert.dart';
 
 import 'categories_screen.dart';
+import 'group_assignment_screen.dart';
 import 'sheikhs_screen.dart';
 import 'tasks_screen.dart';
 
@@ -26,18 +28,29 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
       child: Directionality(
         textDirection: TextDirection.rtl,
         child: Scaffold(
-          
           appBar: AppBar(
             elevation: 5,
             actions: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: ClipOval(child: Image.asset('assets/icons/logo.png', width: 50, height: 50)),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/icons/logo.png',
+                    width: 50,
+                    height: 50,
+                  ),
+                ),
               ),
             ],
             centerTitle: true,
             title: Text(
-              ["الرئيسية", "المحفظين", "الفئات", "المهام", "الأباء"][_currentIndex],
+              [
+                "الرئيسية",
+                "المحفظين",
+                "الفئات",
+                "المهام",
+                "الأباء",
+              ][_currentIndex],
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
           ),
@@ -68,7 +81,10 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
                           Text('اسم المستخدم: '),
                           Text(
                             authState?.username ?? "",
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
                         ],
                       ),
@@ -78,7 +94,10 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
                           Text('الرقم: '),
                           Text(
                             authState?.phone ?? "",
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
                         ],
                       ),
@@ -86,20 +105,46 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
                       Column(
                         children: [
                           ListTile(
-                            leading: const Icon(Icons.date_range, size: 24, color: Colors.blue),
+                            leading: const Icon(
+                              Icons.date_range,
+                              size: 24,
+                              color: Colors.blue,
+                            ),
                             visualDensity: VisualDensity.compact,
                             title: const Text(
                               "جدول المواعيد",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                              ),
                             ),
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const GroupAssignmentScreen(),
+                                ),
+                              );
+                              // Navigator.push(
+                              //   context,
+                              //   MaterialPageRoute(builder: (context) => const AssignChildScreen()),
+                              // );
+                            },
                           ),
                           ListTile(
-                            leading: const Icon(Icons.logout_outlined, size: 24, color: Colors.red),
+                            leading: const Icon(
+                              Icons.logout_outlined,
+                              size: 24,
+                              color: Colors.red,
+                            ),
                             visualDensity: VisualDensity.compact,
                             title: const Text(
                               'تسجيل الخروج',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                              ),
                             ),
                             onTap: () {
                               QuickAlert.show(
@@ -109,11 +154,15 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
                                 text: 'هل أنت متأكد من تسجيل الخروج؟',
                                 confirmBtnText: 'تاكيد',
                                 cancelBtnText: 'إلغاء',
-                                confirmBtnColor: Theme.of(context).colorScheme.primary,
+                                confirmBtnColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
                                 showCancelBtn: true,
                                 onConfirmBtnTap: () {
                                   Navigator.pop(context);
-                                  ref.read(authControllerProvider.notifier).logout();
+                                  ref
+                                      .read(authControllerProvider.notifier)
+                                      .logout();
                                 },
                               );
                             },

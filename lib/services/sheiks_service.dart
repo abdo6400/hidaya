@@ -1,7 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hidaya/services/auth_service.dart';
-
-import '../models/schedule_model.dart';
 import '../models/user_model.dart';
 
 class SheiksService {
@@ -93,22 +91,6 @@ class SheiksService {
     await _users.doc(sheikhId).update({'status': status});
   }
 
-  Future<List<ScheduleModel>> getSchedules(String sheikhId) async {
-    final query = await _db.collection("schedules").where("sheikhId", isEqualTo: sheikhId).get();
-
-    return query.docs.map((d) => ScheduleModel.fromMap(d.id, d.data())).toList();
-  }
-
-  Future<ScheduleModel?> addSchedule(ScheduleModel schedule) async {
-    final doc = await _db.collection("schedules").add(schedule.toMap());
-    return ScheduleModel.fromMap(doc.id, schedule.toMap());
-  }
-
-  Future<void> updateSchedule(String scheduleId, Map<String, dynamic> data) async {
-    await _db.collection("schedules").doc(scheduleId).update(data);
-  }
-
-  Future<void> deleteSchedule(String scheduleId) async {
-    await _db.collection("schedules").doc(scheduleId).delete();
-  }
+  // Schedule-related operations have been moved to SchedulesService
+  // Use schedulesServiceProvider or schedulesControllerProvider for schedule operations
 }

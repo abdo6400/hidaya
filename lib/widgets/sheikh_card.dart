@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hidaya/screens/admin/schedule_preview_screen.dart';
 import '../models/user_model.dart';
 import '../controllers/sheiks_controller.dart';
-import '../screens/admin/sheikh_schedules_screen.dart';
+import '../screens/admin/manage_schedule_screen.dart';
 
 class SheikhCard extends ConsumerWidget {
   final AppUser sheikh;
@@ -18,8 +19,7 @@ class SheikhCard extends ConsumerWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                SheikhSchedulesScreen(sheikhId: sheikh.id, sheikhName: sheikh.username),
+            builder: (context) => SchedulePreviewScreen(sheikhId: sheikh.id),
           ),
         );
       },
@@ -66,7 +66,10 @@ class SheikhCard extends ConsumerWidget {
                     Text(
                       sheikh.username,
                       textDirection: TextDirection.rtl,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -127,7 +130,9 @@ class SheikhCard extends ConsumerWidget {
                                 child: const Text("إلغاء"),
                               ),
                               ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
                                 onPressed: () => Navigator.pop(ctx, true),
                                 child: const Text("حذف"),
                               ),
@@ -136,7 +141,9 @@ class SheikhCard extends ConsumerWidget {
                         ),
                       );
                       if (confirm == true) {
-                        await ref.read(sheiksControllerProvider.notifier).deleteSheikh(sheikh.id);
+                        await ref
+                            .read(sheiksControllerProvider.notifier)
+                            .deleteSheikh(sheikh.id);
                       }
                     },
                   ),

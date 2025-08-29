@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hidaya/screens/admin/assign_child_screen.dart';
 import '../../controllers/parents_controller.dart';
 import '../../controllers/children_controller.dart';
 import '../../models/user_model.dart';
@@ -17,7 +18,9 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(parentsControllerProvider.notifier).loadParents());
+    Future.microtask(
+      () => ref.read(parentsControllerProvider.notifier).loadParents(),
+    );
   }
 
   @override
@@ -26,7 +29,7 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-          heroTag: null,
+        heroTag: null,
         onPressed: () => _showAddParentDialog(context),
         child: const Icon(Icons.add),
       ),
@@ -39,7 +42,9 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
               decoration: InputDecoration(
                 hintText: "بحث بالاسم أو الهاتف...",
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onChanged: (value) {
                 setState(() => _searchQuery = value.toLowerCase());
@@ -83,12 +88,19 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
       elevation: 3,
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: parent.status == "active" ? Colors.green : Colors.red,
+          backgroundColor: parent.status == "active"
+              ? Colors.green
+              : Colors.red,
           child: Text(parent.username[0].toUpperCase()),
         ),
 
-        title: Text(parent.username, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text("${parent.phone} • ${parent.status == "active" ? "مقبول" : "قيد المراجعة"}"),
+        title: Text(
+          parent.username,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          "${parent.phone} • ${parent.status == "active" ? "مقبول" : "قيد المراجعة"}",
+        ),
         children: [
           _buildChildrenSection(parent),
           OverflowBar(
@@ -99,7 +111,9 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
                   onPressed: () async {
                     await _handleOperation(
                       context,
-                      () => ref.read(parentsControllerProvider.notifier).acceptParent(parent.id),
+                      () => ref
+                          .read(parentsControllerProvider.notifier)
+                          .acceptParent(parent.id),
                       successMessage: "تم قبول ولي الأمر",
                     );
                   },
@@ -113,7 +127,9 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
                 onPressed: () async {
                   await _handleOperation(
                     context,
-                    () => ref.read(parentsControllerProvider.notifier).deleteParent(parent.id),
+                    () => ref
+                        .read(parentsControllerProvider.notifier)
+                        .deleteParent(parent.id),
                     successMessage: "تم حذف ولي الأمر",
                   );
                 },
@@ -168,7 +184,8 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
                   }
                 },
                 itemBuilder: (context) => [
-                  if (!child.isApproved) const PopupMenuItem(value: "approve", child: Text("قبول")),
+                  if (!child.isApproved)
+                    const PopupMenuItem(value: "approve", child: Text("قبول")),
                   const PopupMenuItem(value: "delete", child: Text("حذف")),
                 ],
               ),
@@ -176,10 +193,14 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
           }).toList(),
         );
       },
-      loading: () =>
-          const Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()),
-      error: (err, _) =>
-          Padding(padding: const EdgeInsets.all(8.0), child: Text("خطأ في تحميل الأطفال: $err")),
+      loading: () => const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: CircularProgressIndicator(),
+      ),
+      error: (err, _) => Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text("خطأ في تحميل الأطفال: $err"),
+      ),
     );
   }
 
@@ -207,7 +228,10 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("إلغاء")),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("إلغاء"),
+            ),
             ElevatedButton(
               onPressed: () async {
                 await _handleOperation(
@@ -257,7 +281,10 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("إلغاء")),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("إلغاء"),
+            ),
             ElevatedButton(
               onPressed: () async {
                 await _handleOperation(
@@ -301,12 +328,16 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
       await operation();
       if (mounted) {
         Navigator.pop(context); // close loading
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMessage)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(successMessage)));
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // close loading
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("خطأ: $e")));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("خطأ: $e")));
       }
     }
   }
