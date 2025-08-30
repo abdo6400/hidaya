@@ -45,6 +45,14 @@ final monthlyStatisticsProvider = FutureProvider<Map<String, dynamic>>((
   return await service.getMonthlyStatistics();
 });
 
+final sheikhNameProvider = FutureProvider.family<String, String>((
+  ref,
+  sheikhId,
+) async {
+  final service = ref.read(reportsServiceProvider);
+  return await service.getSheikhNameById(sheikhId);
+});
+
 class ReportsController
     extends StateNotifier<AsyncValue<Map<String, dynamic>>> {
   final ReportsService _service;

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/controllers/schedule_groups_controller.dart';
+import 'package:hidaya/controllers/category_controller.dart';
+import 'package:hidaya/controllers/reports_controller.dart';
 import 'package:hidaya/models/schedule_group_model.dart';
+import 'package:hidaya/models/category_model.dart';
 import 'package:hidaya/widgets/error_widget.dart' as app_error;
 import 'package:hidaya/widgets/loading_indicator.dart';
 import 'create_group_screen.dart';
@@ -65,7 +68,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
     if (result == true) {
       // Refresh the groups list
-      setState(() {});
+      ref.invalidate(scheduleGroupsWithCountControllerProvider('admin'));
     }
   }
 }
@@ -75,14 +78,16 @@ class _GroupsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groupsAsync = ref.watch(scheduleGroupsControllerProvider('admin'));
+    final groupsAsync = ref.watch(
+      scheduleGroupsWithCountControllerProvider('admin'),
+    );
 
     return groupsAsync.when(
       loading: () => const LoadingIndicator(),
       error: (error, stack) =>
           app_error.AppErrorWidget(message: error.toString()),
-      data: (groups) {
-        if (groups.isEmpty) {
+      data: (groupsData) {
+        if (groupsData.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -103,13 +108,19 @@ class _GroupsTab extends ConsumerWidget {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: groups.length,
-          itemBuilder: (context, index) {
-            final group = groups[index];
-            return _GroupCard(group: group);
-          },
+        return RefreshIndicator(
+          onRefresh: () => ref
+              .read(scheduleGroupsWithCountControllerProvider('admin').notifier)
+              .refresh(),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: groupsData.length,
+            itemBuilder: (context, index) {
+              final group = groupsData[index]['group'] as ScheduleGroupModel;
+              final childrenCount = groupsData[index]['childrenCount'] as int;
+              return _GroupCard(group: group, childrenCount: childrenCount);
+            },
+          ),
         );
       },
     );
@@ -118,8 +129,9 @@ class _GroupsTab extends ConsumerWidget {
 
 class _GroupCard extends ConsumerWidget {
   final ScheduleGroupModel group;
+  final int childrenCount;
 
-  const _GroupCard({required this.group});
+  const _GroupCard({required this.group, required this.childrenCount});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -172,8 +184,56 @@ class _GroupCard extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'الشيخ: ${group.sheikhId}',
+                  '$childrenCount طفل',
                   style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                ),
+                const SizedBox(width: 8),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final categoriesAsync = ref.watch(
+                      categoryControllerProvider,
+                    );
+                    return categoriesAsync.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (categories) {
+                        final category = categories.firstWhere(
+                          (cat) => cat.id == group.categoryId,
+                          orElse: () => CategoryModel(
+                            id: '',
+                            name: 'غير محدد',
+                            description: '',
+                          ),
+                        );
+                        return Text(
+                          'الفئة: ${category.name}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final sheikhNameAsync = ref.watch(
+                      sheikhNameProvider(group.sheikhId),
+                    );
+                    return sheikhNameAsync.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => Text(
+                        'الشيخ: ${group.sheikhId}',
+                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                      ),
+                      data: (sheikhName) => Text(
+                        'الشيخ: $sheikhName',
+                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

@@ -587,7 +587,7 @@ class _GroupPerformanceCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'الشيخ: ${group['sheikhId']}',
+                    'الشيخ: ${group['sheikhName']}',
                     style: TextStyle(fontSize: 12, color: Colors.blue[700]),
                   ),
                 ),

@@ -80,6 +80,15 @@ class ReportsService {
       for (var groupDoc in groupsSnapshot.docs) {
         final group = ScheduleGroupModel.fromFirestore(groupDoc);
 
+        // Get sheikh name
+        final sheikhDoc = await _firestore
+            .collection('users')
+            .doc(group.sheikhId)
+            .get();
+        final sheikhName = sheikhDoc.exists && sheikhDoc.data() != null
+            ? (sheikhDoc.data()!['username'] as String?) ?? 'Unknown'
+            : 'Unknown';
+
         // Get children in this group
         final groupChildrenSnapshot = await _firestore
             .collection('group_children')
@@ -122,6 +131,7 @@ class ReportsService {
           'groupId': group.id,
           'groupName': group.name,
           'sheikhId': group.sheikhId,
+          'sheikhName': sheikhName,
           'childrenCount': childrenCount,
           'totalTasks': totalTasks,
           'completedTasks': completedTasks,
@@ -446,6 +456,23 @@ class ReportsService {
       };
     } catch (e) {
       throw Exception('Failed to get monthly statistics: $e');
+    }
+  }
+
+  // Get sheikh name by ID
+  Future<String> getSheikhNameById(String sheikhId) async {
+    try {
+      final sheikhDoc = await _firestore
+          .collection('users')
+          .doc(sheikhId)
+          .get();
+
+      if (sheikhDoc.exists && sheikhDoc.data() != null) {
+        return (sheikhDoc.data()!['username'] as String?) ?? 'Unknown';
+      }
+      return 'Unknown';
+    } catch (e) {
+      return 'Unknown';
     }
   }
 }
