@@ -8,7 +8,6 @@ import '../../utils/app_theme.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/error_widget.dart' as app_error;
 import 'group_detail_screen.dart';
-import 'create_group_screen.dart';
 
 class SheikhDashboardScreen extends ConsumerStatefulWidget {
   const SheikhDashboardScreen({super.key});

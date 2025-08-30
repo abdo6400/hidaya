@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/child_tasks_controller.dart';
+import '../../controllers/category_controller.dart';
 import '../../models/schedule_group_model.dart';
 import '../../models/schedule_model.dart';
 import '../../models/child_model.dart';
+import '../../models/category_model.dart';
 import '../../services/group_children_service.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/loading_indicator.dart';
@@ -144,6 +146,41 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                     widget.group.daysDisplay,
                     style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.category, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final categoriesAsync = ref.watch(
+                      categoryControllerProvider,
+                    );
+                    return categoriesAsync.when(
+                      loading: () => const Text('جاري التحميل...'),
+                      error: (error, stack) => const Text('خطأ في التحميل'),
+                      data: (categories) {
+                        final category = categories.firstWhere(
+                          (cat) => cat.id == widget.group.categoryId,
+                          orElse: () => CategoryModel(
+                            id: '',
+                            name: 'غير محدد',
+                            description: '',
+                          ),
+                        );
+                        return Text(
+                          'التصنيف: ${category.name}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ],
             ),

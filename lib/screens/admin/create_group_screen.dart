@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/controllers/schedule_groups_controller.dart';
 import 'package:hidaya/controllers/sheiks_controller.dart';
+import 'package:hidaya/controllers/category_controller.dart';
 import 'package:hidaya/models/schedule_group_model.dart';
 import 'package:hidaya/models/schedule_model.dart';
+import 'package:hidaya/models/category_model.dart';
 import 'package:hidaya/widgets/error_widget.dart' as app_error;
 import 'package:hidaya/widgets/loading_indicator.dart';
 import 'package:hidaya/widgets/primary_button.dart';
@@ -47,6 +49,12 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
       ).showSnackBar(const SnackBar(content: Text('الرجاء اختيار شيخ')));
       return;
     }
+    if (_selectedCategoryId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('الرجاء اختيار تصنيف')));
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -74,6 +82,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
       final group = ScheduleGroupModel(
         id: '',
         sheikhId: _selectedSheikhId!,
+        categoryId: _selectedCategoryId!,
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         days: daySchedules,
@@ -116,6 +125,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     showDialog(
       context: context,
       builder: (context) => _TimeSlotDialog(
+        selectedCategoryId: _selectedCategoryId,
         onTimeSlotAdded: (timeSlot) {
           setState(() {
             _timeSlots.add(timeSlot);
@@ -210,6 +220,46 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Category Selection
+            Consumer(
+              builder: (context, ref, child) {
+                final categoriesAsync = ref.watch(categoryControllerProvider);
+
+                return categoriesAsync.when(
+                  loading: () => const LoadingIndicator(),
+                  error: (error, stack) =>
+                      app_error.AppErrorWidget(message: error.toString()),
+                  data: (categories) {
+                    return DropdownButtonFormField<String>(
+                      value: _selectedCategoryId,
+                      decoration: const InputDecoration(
+                        labelText: 'اختر التصنيف',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: categories.map((category) {
+                        return DropdownMenuItem(
+                          value: category.id,
+                          child: Text(category.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCategoryId = value;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'الرجاء اختيار تصنيف';
+                        }
+                        return null;
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+
             // Days Selection
             const Text(
               'أيام الدراسة',
@@ -279,8 +329,28 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                       title: Text(
                         '${timeSlot.startTime} - ${timeSlot.endTime}',
                       ),
-                      subtitle: Text(
-                        'التصنيف: ${timeSlot.categoryId ?? "غير محدد"}',
+                      subtitle: Consumer(
+                        builder: (context, ref, child) {
+                          final categoriesAsync = ref.watch(
+                            categoryControllerProvider,
+                          );
+                          return categoriesAsync.when(
+                            loading: () => const Text('جاري التحميل...'),
+                            error: (error, stack) =>
+                                const Text('خطأ في التحميل'),
+                            data: (categories) {
+                              final category = categories.firstWhere(
+                                (cat) => cat.id == timeSlot.categoryId,
+                                orElse: () => CategoryModel(
+                                  id: '',
+                                  name: 'غير محدد',
+                                  description: '',
+                                ),
+                              );
+                              return Text('التصنيف: ${category.name}');
+                            },
+                          );
+                        },
                       ),
                       trailing: IconButton(
                         onPressed: () => _removeTimeSlot(index),
@@ -326,8 +396,12 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
 
 class _TimeSlotDialog extends StatefulWidget {
   final Function(TimeSlot) onTimeSlotAdded;
+  final String? selectedCategoryId;
 
-  const _TimeSlotDialog({required this.onTimeSlotAdded});
+  const _TimeSlotDialog({
+    required this.onTimeSlotAdded,
+    this.selectedCategoryId,
+  });
 
   @override
   State<_TimeSlotDialog> createState() => _TimeSlotDialogState();
@@ -337,6 +411,12 @@ class _TimeSlotDialogState extends State<_TimeSlotDialog> {
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
   String? _selectedCategoryId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategoryId = widget.selectedCategoryId;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +457,45 @@ class _TimeSlotDialogState extends State<_TimeSlotDialog> {
               }
             },
           ),
-          // TODO: Add category selection dropdown
+          const SizedBox(height: 16),
+          // Category Selection
+          Consumer(
+            builder: (context, ref, child) {
+              final categoriesAsync = ref.watch(categoryControllerProvider);
+
+              return categoriesAsync.when(
+                loading: () => const LoadingIndicator(),
+                error: (error, stack) =>
+                    app_error.AppErrorWidget(message: error.toString()),
+                data: (categories) {
+                  return DropdownButtonFormField<String>(
+                    value: _selectedCategoryId,
+                    decoration: const InputDecoration(
+                      labelText: 'اختر التصنيف',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: categories.map((category) {
+                      return DropdownMenuItem(
+                        value: category.id,
+                        child: Text(category.name),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCategoryId = value;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null) {
+                        return 'الرجاء اختيار تصنيف';
+                      }
+                      return null;
+                    },
+                  );
+                },
+              );
+            },
+          ),
         ],
       ),
       actions: [

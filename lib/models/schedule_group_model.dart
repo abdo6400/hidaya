@@ -4,6 +4,7 @@ import 'schedule_model.dart';
 class ScheduleGroupModel {
   final String id;
   final String sheikhId;
+  final String categoryId;
   final String name;
   final String description;
   final List<DaySchedule> days;
@@ -14,6 +15,7 @@ class ScheduleGroupModel {
   ScheduleGroupModel({
     required this.id,
     required this.sheikhId,
+    required this.categoryId,
     required this.name,
     required this.description,
     required this.days,
@@ -27,6 +29,7 @@ class ScheduleGroupModel {
     return ScheduleGroupModel(
       id: doc.id,
       sheikhId: data['sheikhId'] ?? '',
+      categoryId: data['categoryId'] ?? '',
       name: data['name'] ?? '',
       description: data['description'] ?? '',
       days:
@@ -45,6 +48,7 @@ class ScheduleGroupModel {
   Map<String, dynamic> toMap() {
     return {
       'sheikhId': sheikhId,
+      'categoryId': categoryId,
       'name': name,
       'description': description,
       'days': days.map((day) => day.toMap()).toList(),
@@ -57,6 +61,7 @@ class ScheduleGroupModel {
   ScheduleGroupModel copyWith({
     String? id,
     String? sheikhId,
+    String? categoryId,
     String? name,
     String? description,
     List<DaySchedule>? days,
@@ -67,6 +72,7 @@ class ScheduleGroupModel {
     return ScheduleGroupModel(
       id: id ?? this.id,
       sheikhId: sheikhId ?? this.sheikhId,
+      categoryId: categoryId ?? this.categoryId,
       name: name ?? this.name,
       description: description ?? this.description,
       days: days ?? this.days,

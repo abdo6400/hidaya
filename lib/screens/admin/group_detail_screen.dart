@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/controllers/child_tasks_controller.dart';
+import 'package:hidaya/controllers/category_controller.dart';
+import 'package:hidaya/models/category_model.dart';
 import 'package:hidaya/models/child_model.dart';
 import 'package:hidaya/models/schedule_group_model.dart';
 import 'package:hidaya/models/schedule_model.dart';
@@ -147,6 +149,41 @@ class _AdminGroupDetailScreenState extends ConsumerState<AdminGroupDetailScreen>
                 Text(
                   'الشيخ: ${widget.group.sheikhId}',
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.category, size: 16, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final categoriesAsync = ref.watch(
+                      categoryControllerProvider,
+                    );
+                    return categoriesAsync.when(
+                      loading: () => const Text('جاري التحميل...'),
+                      error: (error, stack) => const Text('خطأ في التحميل'),
+                      data: (categories) {
+                        final category = categories.firstWhere(
+                          (cat) => cat.id == widget.group.categoryId,
+                          orElse: () => CategoryModel(
+                            id: '',
+                            name: 'غير محدد',
+                            description: '',
+                          ),
+                        );
+                        return Text(
+                          'التصنيف: ${category.name}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ],
             ),
