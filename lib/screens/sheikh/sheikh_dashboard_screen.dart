@@ -34,13 +34,8 @@ class _SheikhDashboardScreenState extends ConsumerState<SheikhDashboardScreen> {
         child: Scaffold(
           appBar: AppBar(
             title: Text(_getTabTitle(_currentIndex)),
-            actions: [
-              if (_currentIndex == 0) // Groups tab
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () => _navigateToCreateGroup(context),
-                ),
-            ],
+            // Sheikhs can only view groups, not create them
+            // Groups are created by admin only
           ),
           body: IndexedStack(
             index: _currentIndex,
@@ -86,12 +81,8 @@ class _SheikhDashboardScreenState extends ConsumerState<SheikhDashboardScreen> {
     }
   }
 
-  void _navigateToCreateGroup(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const CreateGroupScreen()),
-    );
-  }
+  // Sheikhs can only view groups, not create them
+  // Groups are created by admin only
 }
 
 class _GroupsTab extends ConsumerWidget {
@@ -118,12 +109,12 @@ class _GroupsTab extends ConsumerWidget {
                 Icon(Icons.group_outlined, size: 64, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
-                  'لا توجد مجموعات بعد',
+                  'لا توجد مجموعات مسندة إليك',
                   style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'اضغط على + لإنشاء مجموعة جديدة',
+                  'سيتم إسناد المجموعات من قبل المدير',
                   style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                 ),
               ],
