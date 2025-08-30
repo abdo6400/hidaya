@@ -5,7 +5,7 @@ import '../../controllers/schedule_groups_controller.dart';
 import '../../controllers/category_controller.dart';
 import '../../models/schedule_group_model.dart';
 import '../../models/schedule_model.dart';
-import '../../utils/app_theme.dart';
+
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/primary_button.dart';
 

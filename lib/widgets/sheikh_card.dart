@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hidaya/screens/admin/schedule_preview_screen.dart';
 import '../models/user_model.dart';
 import '../controllers/sheiks_controller.dart';
-import '../screens/admin/manage_schedule_screen.dart';
 
 class SheikhCard extends ConsumerWidget {
   final AppUser sheikh;
@@ -15,14 +13,7 @@ class SheikhCard extends ConsumerWidget {
     final bool isActive = sheikh.status == 'active';
 
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SchedulePreviewScreen(sheikhId: sheikh.id),
-          ),
-        );
-      },
+      onTap: () {},
       child: Card(
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 5),

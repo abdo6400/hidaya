@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/controllers/child_tasks_controller.dart';
-import 'package:hidaya/controllers/group_children_controller.dart';
 import 'package:hidaya/models/child_model.dart';
 import 'package:hidaya/models/schedule_group_model.dart';
 import 'package:hidaya/models/schedule_model.dart';
@@ -23,7 +22,6 @@ class AdminGroupDetailScreen extends ConsumerStatefulWidget {
 class _AdminGroupDetailScreenState extends ConsumerState<AdminGroupDetailScreen>
     with TickerProviderStateMixin {
   int _currentIndex = 0;
-  final GroupChildrenService _groupChildrenService = GroupChildrenService();
 
   @override
   Widget build(BuildContext context) {

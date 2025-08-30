@@ -20,34 +20,37 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('لوحة تحكم المدير'), centerTitle: true),
-      body: Column(
-        children: [
-          // Tab Bar
-          TabBar(
-            onTap: (index) => setState(() => _currentIndex = index),
-            tabs: const [
-              Tab(text: 'المجموعات'),
-              Tab(text: 'التقارير'),
-            ],
-          ),
-
-          // Tab Content
-          Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: const [_GroupsTab(), _ReportsTab()],
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('لوحة تحكم المدير'), centerTitle: true),
+        body: Column(
+          children: [
+            // Tab Bar
+            TabBar(
+              onTap: (index) => setState(() => _currentIndex = index),
+              tabs: const [
+                Tab(text: 'المجموعات'),
+                Tab(text: 'التقارير'),
+              ],
             ),
-          ),
-        ],
+      
+            // Tab Content
+            Expanded(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: const [_GroupsTab(), _ReportsTab()],
+              ),
+            ),
+          ],
+        ),
+        floatingActionButton: _currentIndex == 0
+            ? FloatingActionButton(
+                onPressed: () => _createNewGroup(),
+                child: const Icon(Icons.add),
+              )
+            : null,
       ),
-      floatingActionButton: _currentIndex == 0
-          ? FloatingActionButton(
-              onPressed: () => _createNewGroup(),
-              child: const Icon(Icons.add),
-            )
-          : null,
     );
   }
 
@@ -298,7 +301,6 @@ class _GroupCard extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              // TODO: Delete group
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -320,101 +322,103 @@ class _ReportsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'التقارير والإحصائيات',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          // Statistics Cards
-          Row(
-            children: [
-              Expanded(
-                child: _StatCard(
-                  title: 'إجمالي المجموعات',
-                  value: '12',
-                  icon: Icons.group,
-                  color: Colors.blue,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'التقارير والإحصائيات',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+      
+            // Statistics Cards
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    title: 'إجمالي المجموعات',
+                    value: '12',
+                    icon: Icons.group,
+                    color: Colors.blue,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
-                  title: 'المجموعات النشطة',
-                  value: '8',
-                  icon: Icons.check_circle,
-                  color: Colors.green,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _StatCard(
+                    title: 'المجموعات النشطة',
+                    value: '8',
+                    icon: Icons.check_circle,
+                    color: Colors.green,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _StatCard(
-                  title: 'إجمالي الأطفال',
-                  value: '156',
-                  icon: Icons.child_care,
-                  color: Colors.orange,
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    title: 'إجمالي الأطفال',
+                    value: '156',
+                    icon: Icons.child_care,
+                    color: Colors.orange,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCard(
-                  title: 'إجمالي المهام',
-                  value: '89',
-                  icon: Icons.assignment,
-                  color: Colors.purple,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _StatCard(
+                    title: 'إجمالي المهام',
+                    value: '89',
+                    icon: Icons.assignment,
+                    color: Colors.purple,
+                  ),
                 ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          // Quick Actions
-          const Text(
-            'إجراءات سريعة',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-
-          _QuickActionCard(
-            title: 'إنشاء مجموعة جديدة',
-            subtitle: 'إنشاء مجموعة مع جدول زمني',
-            icon: Icons.add_circle,
-            color: Colors.blue,
-            onTap: () {
-              // TODO: Navigate to create group
-            },
-          ),
-          const SizedBox(height: 8),
-          _QuickActionCard(
-            title: 'تقرير الأداء',
-            subtitle: 'عرض تقارير أداء الأطفال',
-            icon: Icons.analytics,
-            color: Colors.green,
-            onTap: () {
-              // TODO: Navigate to performance report
-            },
-          ),
-          const SizedBox(height: 8),
-          _QuickActionCard(
-            title: 'إدارة المهام',
-            subtitle: 'إنشاء وإدارة المهام',
-            icon: Icons.assignment,
-            color: Colors.orange,
-            onTap: () {
-              // TODO: Navigate to task management
-            },
-          ),
-        ],
+              ],
+            ),
+      
+            const SizedBox(height: 24),
+      
+            // Quick Actions
+            const Text(
+              'إجراءات سريعة',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+      
+            _QuickActionCard(
+              title: 'إنشاء مجموعة جديدة',
+              subtitle: 'إنشاء مجموعة مع جدول زمني',
+              icon: Icons.add_circle,
+              color: Colors.blue,
+              onTap: () {
+                // TODO: Navigate to create group
+              },
+            ),
+            const SizedBox(height: 8),
+            _QuickActionCard(
+              title: 'تقرير الأداء',
+              subtitle: 'عرض تقارير أداء الأطفال',
+              icon: Icons.analytics,
+              color: Colors.green,
+              onTap: () {
+                // TODO: Navigate to performance report
+              },
+            ),
+            const SizedBox(height: 8),
+            _QuickActionCard(
+              title: 'إدارة المهام',
+              subtitle: 'إنشاء وإدارة المهام',
+              icon: Icons.assignment,
+              color: Colors.orange,
+              onTap: () {
+                // TODO: Navigate to task management
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
