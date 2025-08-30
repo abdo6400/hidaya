@@ -24,10 +24,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('لوحة تحكم المدير'),
-          centerTitle: true,
-        ),
+       
         body: Column(
           children: [
             // Tab Bar
