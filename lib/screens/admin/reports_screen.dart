@@ -21,7 +21,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('التقارير والإحصائيات'),
+        
           centerTitle: true,
           actions: [
             IconButton(
