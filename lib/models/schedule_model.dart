@@ -7,7 +7,26 @@ enum WeekDay {
   wednesday,
   thursday,
   friday,
-  saturday
+  saturday;
+
+  String get displayName {
+    switch (this) {
+      case WeekDay.sunday:
+        return 'الأحد';
+      case WeekDay.monday:
+        return 'الاثنين';
+      case WeekDay.tuesday:
+        return 'الثلاثاء';
+      case WeekDay.wednesday:
+        return 'الأربعاء';
+      case WeekDay.thursday:
+        return 'الخميس';
+      case WeekDay.friday:
+        return 'الجمعة';
+      case WeekDay.saturday:
+        return 'السبت';
+    }
+  }
 }
 
 class TimeSlot {
@@ -42,10 +61,7 @@ class DaySchedule {
   final WeekDay day;
   final List<TimeSlot> timeSlots;
 
-  DaySchedule({
-    required this.day,
-    required this.timeSlots,
-  });
+  DaySchedule({required this.day, required this.timeSlots});
 
   Map<String, dynamic> toMap() {
     return {
@@ -60,7 +76,8 @@ class DaySchedule {
         (d) => d.name == map['day'],
         orElse: () => WeekDay.sunday,
       ),
-      timeSlots: (map['timeSlots'] as List?)
+      timeSlots:
+          (map['timeSlots'] as List?)
               ?.map((slot) => TimeSlot.fromMap(slot as Map<String, dynamic>))
               .toList() ??
           [],
@@ -88,7 +105,8 @@ class ScheduleModel {
     return ScheduleModel(
       id: doc.id,
       sheikhId: data['sheikhId'] ?? '',
-      days: (data['days'] as List?)
+      days:
+          (data['days'] as List?)
               ?.map((day) => DaySchedule.fromMap(day as Map<String, dynamic>))
               .toList() ??
           [],
@@ -121,5 +139,4 @@ class ScheduleModel {
       isActive: isActive ?? this.isActive,
     );
   }
-  }
-
+}

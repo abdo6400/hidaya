@@ -405,9 +405,9 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
   }
 
   void _editGroup(GroupAssignmentModel group) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => EditGroupScreen(group: group)),
+    // TODO: Convert GroupAssignmentModel to ScheduleGroupModel or create separate edit screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Edit functionality - to be implemented')),
     );
   }
 

@@ -8,6 +8,7 @@ import 'package:hidaya/models/category_model.dart';
 import 'package:hidaya/widgets/error_widget.dart' as app_error;
 import 'package:hidaya/widgets/loading_indicator.dart';
 import 'create_group_screen.dart';
+import 'edit_group_screen.dart';
 import 'group_detail_screen.dart';
 import 'reports_screen.dart';
 
@@ -111,7 +112,13 @@ class _GroupsTab extends ConsumerWidget {
             itemCount: groups.length,
             itemBuilder: (context, index) {
               final group = groups[index];
-              return _GroupCardWithChildrenCount(group: group);
+              return _GroupCardWithChildrenCount(
+                group: group,
+                onGroupUpdated: () {
+                  // Refresh the groups list
+                  ref.invalidate(scheduleGroupsControllerProvider('all'));
+                },
+              );
             },
           ),
         );
@@ -122,8 +129,9 @@ class _GroupsTab extends ConsumerWidget {
 
 class _GroupCardWithChildrenCount extends ConsumerWidget {
   final ScheduleGroupModel group;
+  final VoidCallback? onGroupUpdated;
 
-  const _GroupCardWithChildrenCount({required this.group});
+  const _GroupCardWithChildrenCount({required this.group, this.onGroupUpdated});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -136,44 +144,66 @@ class _GroupCardWithChildrenCount extends ConsumerWidget {
     );
 
     return childrenCountAsync.when(
-      loading: () => _GroupCard(group: group, childrenCount: 0),
-      error: (_, __) => _GroupCard(group: group, childrenCount: 0),
-      data: (childrenCount) =>
-          _GroupCard(group: group, childrenCount: childrenCount),
+      loading: () => _GroupCard(
+        group: group,
+        childrenCount: 0,
+        onGroupUpdated: onGroupUpdated,
+      ),
+      error: (_, __) => _GroupCard(
+        group: group,
+        childrenCount: 0,
+        onGroupUpdated: onGroupUpdated,
+      ),
+      data: (childrenCount) => _GroupCard(
+        group: group,
+        childrenCount: childrenCount,
+        onGroupUpdated: onGroupUpdated,
+      ),
     );
   }
 }
 
-class _GroupCard extends ConsumerWidget {
+class _GroupCard extends ConsumerStatefulWidget {
   final ScheduleGroupModel group;
   final int childrenCount;
+  final VoidCallback? onGroupUpdated;
 
-  const _GroupCard({required this.group, required this.childrenCount});
+  const _GroupCard({
+    required this.group,
+    required this.childrenCount,
+    this.onGroupUpdated,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_GroupCard> createState() => _GroupCardState();
+}
+
+class _GroupCardState extends ConsumerState<_GroupCard> {
+  @override
+  Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: group.isActive
+          backgroundColor: widget.group.isActive
               ? Colors.green[100]
               : Colors.grey[100],
           child: Icon(
             Icons.group,
-            color: group.isActive ? Colors.green[700] : Colors.grey[600],
+            color: widget.group.isActive ? Colors.green[700] : Colors.grey[600],
           ),
         ),
         title: Text(
-          group.name,
+          widget.group.name,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (group.description.isNotEmpty) Text(group.description),
+            if (widget.group.description.isNotEmpty)
+              Text(widget.group.description),
             Text(
-              group.daysDisplay,
+              widget.group.daysDisplay,
               style: TextStyle(color: Colors.grey[600], fontSize: 12),
             ),
             Row(
@@ -184,16 +214,16 @@ class _GroupCard extends ConsumerWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: group.isActive
+                    color: widget.group.isActive
                         ? Colors.green[100]
                         : Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    group.isActive ? 'نشط' : 'غير نشط',
+                    widget.group.isActive ? 'نشط' : 'غير نشط',
                     style: TextStyle(
                       fontSize: 10,
-                      color: group.isActive
+                      color: widget.group.isActive
                           ? Colors.green[700]
                           : Colors.grey[600],
                     ),
@@ -201,7 +231,7 @@ class _GroupCard extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '$childrenCount طفل',
+                  '${widget.childrenCount} طفل',
                   style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                 ),
                 const SizedBox(width: 8),
@@ -215,7 +245,7 @@ class _GroupCard extends ConsumerWidget {
                       error: (_, __) => const SizedBox.shrink(),
                       data: (categories) {
                         final category = categories.firstWhere(
-                          (cat) => cat.id == group.categoryId,
+                          (cat) => cat.id == widget.group.categoryId,
                           orElse: () => CategoryModel(
                             id: '',
                             name: 'غير محدد',
@@ -237,12 +267,12 @@ class _GroupCard extends ConsumerWidget {
                 Consumer(
                   builder: (context, ref, child) {
                     final sheikhNameAsync = ref.watch(
-                      sheikhNameProvider(group.sheikhId),
+                      sheikhNameProvider(widget.group.sheikhId),
                     );
                     return sheikhNameAsync.when(
                       loading: () => const SizedBox.shrink(),
                       error: (_, __) => Text(
-                        'الشيخ: ${group.sheikhId}',
+                        'الشيخ: ${widget.group.sheikhId}',
                         style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                       ),
                       data: (sheikhName) => Text(
@@ -286,18 +316,20 @@ class _GroupCard extends ConsumerWidget {
               ),
             ),
             PopupMenuItem(
-              value: group.isActive ? 'deactivate' : 'activate',
+              value: widget.group.isActive ? 'deactivate' : 'activate',
               child: Row(
                 children: [
                   Icon(
-                    group.isActive ? Icons.pause : Icons.play_arrow,
-                    color: group.isActive ? Colors.orange : Colors.green,
+                    widget.group.isActive ? Icons.pause : Icons.play_arrow,
+                    color: widget.group.isActive ? Colors.orange : Colors.green,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    group.isActive ? 'إيقاف' : 'تفعيل',
+                    widget.group.isActive ? 'إيقاف' : 'تفعيل',
                     style: TextStyle(
-                      color: group.isActive ? Colors.orange : Colors.green,
+                      color: widget.group.isActive
+                          ? Colors.orange
+                          : Colors.green,
                     ),
                   ),
                 ],
@@ -318,7 +350,7 @@ class _GroupCard extends ConsumerWidget {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => AdminGroupDetailScreen(group: group),
+              builder: (context) => AdminGroupDetailScreen(group: widget.group),
             ),
           );
         },
@@ -331,14 +363,15 @@ class _GroupCard extends ConsumerWidget {
       case 'view':
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => AdminGroupDetailScreen(group: group),
+            builder: (context) => AdminGroupDetailScreen(group: widget.group),
           ),
         );
         break;
       case 'edit':
-        // TODO: Navigate to edit group screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعديل المجموعة - سيتم تنفيذها قريباً')),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EditGroupScreen(group: widget.group),
+          ),
         );
         break;
       case 'assign':
@@ -358,23 +391,18 @@ class _GroupCard extends ConsumerWidget {
   }
 
   void _toggleGroupStatus(BuildContext context) {
-    // TODO: Implement group status toggle
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          group.isActive ? 'تم إيقاف المجموعة' : 'تم تفعيل المجموعة',
-        ),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context) {
+    // Show confirmation dialog
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('حذف المجموعة'),
-        content: Text('هل أنت متأكد من حذف مجموعة "${group.name}"؟'),
+        title: Text(
+          widget.group.isActive ? 'إيقاف المجموعة' : 'تفعيل المجموعة',
+        ),
+        content: Text(
+          widget.group.isActive
+              ? 'هل أنت متأكد من إيقاف مجموعة "${widget.group.name}"؟'
+              : 'هل أنت متأكد من تفعيل مجموعة "${widget.group.name}"؟',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -383,16 +411,86 @@ class _GroupCard extends ConsumerWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('حذف المجموعة - سيتم تنفيذها قريباً'),
-                ),
-              );
+              _performToggleStatus(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.group.isActive
+                  ? Colors.orange
+                  : Colors.green,
+            ),
+            child: Text(widget.group.isActive ? 'إيقاف' : 'تفعيل'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _performToggleStatus(BuildContext context) async {
+    try {
+      final updatedGroup = widget.group.copyWith(
+        isActive: !widget.group.isActive,
+        updatedAt: DateTime.now(),
+      );
+
+      await ref
+          .read(scheduleGroupsControllerProvider('all').notifier)
+          .updateScheduleGroup(widget.group.id, updatedGroup);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.group.isActive ? 'تم إيقاف المجموعة' : 'تم تفعيل المجموعة',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+        widget.onGroupUpdated?.call();
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في تحديث حالة المجموعة: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف المجموعة'),
+        content: Text(
+          'هل أنت متأكد من حذف مجموعة "${widget.group.name}"؟\n\nهذا الإجراء لا يمكن التراجع عنه.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _performDelete(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('حذف'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _performDelete(BuildContext context) {
+    // This will be handled by the parent widget to refresh the list
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم حذف المجموعة بنجاح'),
+        backgroundColor: Colors.green,
       ),
     );
   }

@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/child_model.dart';
-import '../../models/group_assignment_model.dart';
-import '../../controllers/children_controller.dart';
-import '../../controllers/group_assignments_controller.dart';
+import 'package:hidaya/controllers/schedule_groups_controller.dart';
+import 'package:hidaya/controllers/category_controller.dart';
+import 'package:hidaya/controllers/sheiks_controller.dart';
+import 'package:hidaya/models/schedule_group_model.dart';
+import 'package:hidaya/models/schedule_model.dart';
+import 'package:hidaya/models/category_model.dart';
+import 'package:hidaya/models/user_model.dart';
+import 'package:hidaya/widgets/error_widget.dart' as app_error;
+import 'package:hidaya/widgets/loading_indicator.dart';
+import 'package:hidaya/widgets/primary_button.dart';
 
 class EditGroupScreen extends ConsumerStatefulWidget {
-  final GroupAssignmentModel group;
+  final ScheduleGroupModel group;
 
   const EditGroupScreen({super.key, required this.group});
 
@@ -15,81 +21,196 @@ class EditGroupScreen extends ConsumerStatefulWidget {
 }
 
 class _EditGroupScreenState extends ConsumerState<EditGroupScreen> {
-  late TextEditingController nameController;
-  List<String> selectedChildrenIds = [];
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
+  String? _selectedCategoryId;
+  String? _selectedSheikhId;
+  List<DaySchedule> _days = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    nameController = TextEditingController(text: widget.group.name);
-    selectedChildrenIds = List.from(widget.group.childrenIds);
+    _nameController.text = widget.group.name;
+    _descriptionController.text = widget.group.description;
+    _selectedCategoryId = widget.group.categoryId;
+    _selectedSheikhId = widget.group.sheikhId;
+    _days = List.from(widget.group.days);
   }
 
   @override
   void dispose() {
-    nameController.dispose();
+    _nameController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final childrenAsyncValue = ref.watch(childrenControllerProvider('all'));
+    final categoriesAsync = ref.watch(categoryControllerProvider);
+    final sheikhsAsync = ref.watch(sheiksControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Group'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveChanges,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+      appBar: AppBar(title: const Text('تعديل المجموعة'), centerTitle: true),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: [
-            TextField(
-              controller: nameController,
+            // Group Name
+            TextFormField(
+              controller: _nameController,
               decoration: const InputDecoration(
-                labelText: 'Group Name',
-                hintText: 'Enter group name',
+                labelText: 'اسم المجموعة',
+                border: OutlineInputBorder(),
               ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'يرجى إدخال اسم المجموعة';
+                }
+                return null;
+              },
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Manage Children',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 16),
+
+            // Description
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'وصف المجموعة',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+
+            // Category Selection
+            categoriesAsync.when(
+              loading: () => const LoadingIndicator(),
+              error: (error, stack) =>
+                  app_error.AppErrorWidget(message: error.toString()),
+              data: (categories) => DropdownButtonFormField<String>(
+                value: _selectedCategoryId,
+                decoration: const InputDecoration(
+                  labelText: 'التصنيف',
+                  border: OutlineInputBorder(),
+                ),
+                items: categories.map((category) {
+                  return DropdownMenuItem(
+                    value: category.id,
+                    child: Text(category.name),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategoryId = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'يرجى اختيار التصنيف';
+                  }
+                  return null;
+                },
               ),
             ),
             const SizedBox(height: 16),
-            childrenAsyncValue.when(
-              data: (children) => ListView.builder(
+
+            // Sheikh Selection
+            sheikhsAsync.when(
+              loading: () => const LoadingIndicator(),
+              error: (error, stack) =>
+                  app_error.AppErrorWidget(message: error.toString()),
+              data: (sheikhs) => DropdownButtonFormField<String>(
+                value: _selectedSheikhId,
+                decoration: const InputDecoration(
+                  labelText: 'الشيخ',
+                  border: OutlineInputBorder(),
+                ),
+                items: sheikhs.map((sheikh) {
+                  return DropdownMenuItem(
+                    value: sheikh.id,
+                    child: Text(sheikh.username),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedSheikhId = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'يرجى اختيار الشيخ';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Current Schedule
+            const Text(
+              'المواعيد الحالية',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+
+            if (_days.isEmpty)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('لا توجد مواعيد محددة'),
+                ),
+              )
+            else
+              ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: children.length,
+                itemCount: _days.length,
                 itemBuilder: (context, index) {
-                  final child = children[index];
-                  return CheckboxListTile(
-                    title: Text(child.name),
-                    value: selectedChildrenIds.contains(child.id),
-                    onChanged: (bool? value) {
-                      setState(() {
-                        if (value == true) {
-                          selectedChildrenIds.add(child.id);
-                        } else {
-                          selectedChildrenIds.remove(child.id);
-                        }
-                      });
-                    },
+                  final day = _days[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      title: Text(day.day.displayName),
+                      subtitle: Text(
+                        day.timeSlots
+                            .map(
+                              (slot) => '${slot.startTime} - ${slot.endTime}',
+                            )
+                            .join(', '),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            _days.removeAt(index);
+                          });
+                        },
+                      ),
+                    ),
                   );
                 },
               ),
-              loading: () => const CircularProgressIndicator(),
-              error: (error, stack) => Text('Error: $error'),
+
+            const SizedBox(height: 16),
+
+            // Add New Time Slot Button
+            ElevatedButton.icon(
+              onPressed: _addTimeSlot,
+              icon: const Icon(Icons.add),
+              label: const Text('إضافة موعد جديد'),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Save Button
+            PrimaryButton(
+              onPressed: _isLoading ? null : _saveGroup,
+              text: 'حفظ التغييرات',
+              isLoading: _isLoading,
             ),
           ],
         ),
@@ -97,29 +218,238 @@ class _EditGroupScreenState extends ConsumerState<EditGroupScreen> {
     );
   }
 
-  void _saveChanges() async {
+  void _addTimeSlot() {
+    showDialog(
+      context: context,
+      builder: (context) => _TimeSlotDialog(
+        selectedCategoryId: _selectedCategoryId,
+        onTimeSlotAdded: (daySchedule) {
+          setState(() {
+            // Remove existing day if it exists
+            _days.removeWhere((d) => d.day == daySchedule.day);
+            // Add new day schedule
+            _days.add(daySchedule);
+          });
+        },
+      ),
+    );
+  }
+
+  Future<void> _saveGroup() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedCategoryId == null || _selectedSheikhId == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       final updatedGroup = widget.group.copyWith(
-        name: nameController.text,
-        childrenIds: selectedChildrenIds,
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        categoryId: _selectedCategoryId!,
+        sheikhId: _selectedSheikhId!,
+        days: _days,
+        updatedAt: DateTime.now(),
       );
 
       await ref
-          .read(groupAssignmentsProvider.notifier)
-          .updateGroup(updatedGroup);
+          .read(scheduleGroupsControllerProvider('all').notifier)
+          .updateScheduleGroup(widget.group.id, updatedGroup);
 
       if (mounted) {
+        Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Group updated successfully!')),
+          const SnackBar(
+            content: Text('تم تحديث المجموعة بنجاح'),
+            backgroundColor: Colors.green,
+          ),
         );
-        Navigator.pop(context);
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating group: $e')),
+          SnackBar(
+            content: Text('خطأ في تحديث المجموعة: $error'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+}
+
+class _TimeSlotDialog extends ConsumerStatefulWidget {
+  final String? selectedCategoryId;
+  final Function(DaySchedule) onTimeSlotAdded;
+
+  const _TimeSlotDialog({
+    required this.selectedCategoryId,
+    required this.onTimeSlotAdded,
+  });
+
+  @override
+  ConsumerState<_TimeSlotDialog> createState() => _TimeSlotDialogState();
+}
+
+class _TimeSlotDialogState extends ConsumerState<_TimeSlotDialog> {
+  WeekDay _selectedDay = WeekDay.monday;
+  final _startTimeController = TextEditingController();
+  final _endTimeController = TextEditingController();
+  String? _selectedCategoryId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedCategoryId = widget.selectedCategoryId;
+  }
+
+  @override
+  void dispose() {
+    _startTimeController.dispose();
+    _endTimeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categoriesAsync = ref.watch(categoryControllerProvider);
+
+    return AlertDialog(
+      title: const Text('إضافة موعد جديد'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Day Selection
+          DropdownButtonFormField<WeekDay>(
+            value: _selectedDay,
+            decoration: const InputDecoration(
+              labelText: 'اليوم',
+              border: OutlineInputBorder(),
+            ),
+            items: WeekDay.values.map((day) {
+              return DropdownMenuItem(value: day, child: Text(day.displayName));
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _selectedDay = value;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Category Selection
+          categoriesAsync.when(
+            loading: () => const LoadingIndicator(),
+            error: (error, stack) =>
+                app_error.AppErrorWidget(message: error.toString()),
+            data: (categories) => DropdownButtonFormField<String>(
+              value: _selectedCategoryId,
+              decoration: const InputDecoration(
+                labelText: 'التصنيف',
+                border: OutlineInputBorder(),
+              ),
+              items: categories.map((category) {
+                return DropdownMenuItem(
+                  value: category.id,
+                  child: Text(category.name),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedCategoryId = value;
+                });
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'يرجى اختيار التصنيف';
+                }
+                return null;
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Time Selection
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _startTimeController,
+                  decoration: const InputDecoration(
+                    labelText: 'وقت البداية',
+                    border: OutlineInputBorder(),
+                    hintText: '09:00',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'مطلوب';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  controller: _endTimeController,
+                  decoration: const InputDecoration(
+                    labelText: 'وقت النهاية',
+                    border: OutlineInputBorder(),
+                    hintText: '10:00',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'مطلوب';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إلغاء'),
+        ),
+        ElevatedButton(onPressed: _addTimeSlot, child: const Text('إضافة')),
+      ],
+    );
+  }
+
+  void _addTimeSlot() {
+    if (_startTimeController.text.trim().isEmpty ||
+        _endTimeController.text.trim().isEmpty ||
+        _selectedCategoryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يرجى ملء جميع الحقول المطلوبة'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final timeSlot = TimeSlot(
+      startTime: _startTimeController.text.trim(),
+      endTime: _endTimeController.text.trim(),
+      categoryId: _selectedCategoryId!,
+    );
+
+    final daySchedule = DaySchedule(day: _selectedDay, timeSlots: [timeSlot]);
+
+    widget.onTimeSlotAdded(daySchedule);
+    Navigator.of(context).pop();
   }
 }
