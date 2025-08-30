@@ -6,6 +6,7 @@ import 'package:hidaya/widgets/error_widget.dart' as app_error;
 import 'package:hidaya/widgets/loading_indicator.dart';
 import 'create_group_screen.dart';
 import 'group_detail_screen.dart';
+import 'reports_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -23,7 +24,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: AppBar(title: const Text('لوحة تحكم المدير'), centerTitle: true),
+        appBar: AppBar(
+          title: const Text('لوحة تحكم المدير'),
+          centerTitle: true,
+        ),
         body: Column(
           children: [
             // Tab Bar
@@ -34,12 +38,12 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 Tab(text: 'التقارير'),
               ],
             ),
-      
+
             // Tab Content
             Expanded(
               child: IndexedStack(
                 index: _currentIndex,
-                children: const [_GroupsTab(), _ReportsTab()],
+                children: const [_GroupsTab(), ReportsScreen()],
               ),
             ),
           ],
@@ -312,188 +316,6 @@ class _GroupCard extends ConsumerWidget {
             child: const Text('حذف'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ReportsTab extends StatelessWidget {
-  const _ReportsTab();
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'التقارير والإحصائيات',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-      
-            // Statistics Cards
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    title: 'إجمالي المجموعات',
-                    value: '12',
-                    icon: Icons.group,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: 'المجموعات النشطة',
-                    value: '8',
-                    icon: Icons.check_circle,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    title: 'إجمالي الأطفال',
-                    value: '156',
-                    icon: Icons.child_care,
-                    color: Colors.orange,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    title: 'إجمالي المهام',
-                    value: '89',
-                    icon: Icons.assignment,
-                    color: Colors.purple,
-                  ),
-                ),
-              ],
-            ),
-      
-            const SizedBox(height: 24),
-      
-            // Quick Actions
-            const Text(
-              'إجراءات سريعة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-      
-            _QuickActionCard(
-              title: 'إنشاء مجموعة جديدة',
-              subtitle: 'إنشاء مجموعة مع جدول زمني',
-              icon: Icons.add_circle,
-              color: Colors.blue,
-              onTap: () {
-                // TODO: Navigate to create group
-              },
-            ),
-            const SizedBox(height: 8),
-            _QuickActionCard(
-              title: 'تقرير الأداء',
-              subtitle: 'عرض تقارير أداء الأطفال',
-              icon: Icons.analytics,
-              color: Colors.green,
-              onTap: () {
-                // TODO: Navigate to performance report
-              },
-            ),
-            const SizedBox(height: 8),
-            _QuickActionCard(
-              title: 'إدارة المهام',
-              subtitle: 'إنشاء وإدارة المهام',
-              icon: Icons.assignment,
-              color: Colors.orange,
-              onTap: () {
-                // TODO: Navigate to task management
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickActionCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickActionCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
       ),
     );
   }
