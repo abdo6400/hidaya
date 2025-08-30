@@ -42,9 +42,7 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
     final groupsAsyncValue = ref.watch(groupAssignmentsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Group Assignment'),
-      ),
+      appBar: AppBar(title: const Text('Group Assignment')),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -75,7 +73,8 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
                   onChanged: (value) {
                     setState(() {
                       selectedCategory = value;
-                      selectedSchedule = null; // Reset schedule when category changes
+                      selectedSchedule =
+                          null; // Reset schedule when category changes
                     });
                   },
                 ),
@@ -98,7 +97,8 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
                   onChanged: (value) {
                     setState(() {
                       selectedSheikh = value;
-                      selectedSchedule = null; // Reset schedule when sheikh changes
+                      selectedSchedule =
+                          null; // Reset schedule when sheikh changes
                     });
                   },
                 ),
@@ -114,13 +114,15 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
                     final filteredSchedules = schedules.where((schedule) {
                       // Check if the schedule belongs to the selected sheikh
                       if (schedule.sheikhId != selectedSheikh!.id) return false;
-                      
+
                       // Check if any time slot in any day has the selected category
-                      return schedule.days.any((day) => 
-                        day.timeSlots.any((slot) => slot.categoryId == selectedCategory!.id)
+                      return schedule.days.any(
+                        (day) => day.timeSlots.any(
+                          (slot) => slot.categoryId == selectedCategory!.id,
+                        ),
                       );
                     }).toList();
-                    
+
                     if (filteredSchedules.isEmpty) {
                       return const Card(
                         child: Padding(
@@ -146,13 +148,22 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: schedule.days.map((day) {
                                   return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: day.timeSlots
-                                        .where((slot) => slot.categoryId == selectedCategory!.id)
-                                        .map((slot) => Text(
-                                              '${day.day.name} ${slot.startTime}-${slot.endTime}',
-                                              style: const TextStyle(fontSize: 16),
-                                            ))
+                                        .where(
+                                          (slot) =>
+                                              slot.categoryId ==
+                                              selectedCategory!.id,
+                                        )
+                                        .map(
+                                          (slot) => Text(
+                                            '${day.day.name} ${slot.startTime}-${slot.endTime}',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        )
                                         .toList(),
                                   );
                                 }).toList(),
@@ -182,19 +193,32 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
                                 children: [
                                   Text(
                                     'Schedule Details:',
-                                    style: Theme.of(context).textTheme.titleMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium,
                                   ),
                                   Column(
-                                    children: selectedSchedule!.days.expand((day) {
+                                    children: selectedSchedule!.days.expand((
+                                      day,
+                                    ) {
                                       return day.timeSlots
-                                          .where((slot) => slot.categoryId == selectedCategory!.id)
-                                          .map((slot) => Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text('Day: ${day.day.name}'),
-                                                  Text('Time: ${slot.startTime} - ${slot.endTime}'),
-                                                ],
-                                              ));
+                                          .where(
+                                            (slot) =>
+                                                slot.categoryId ==
+                                                selectedCategory!.id,
+                                          )
+                                          .map(
+                                            (slot) => Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text('Day: ${day.day.name}'),
+                                                Text(
+                                                  'Time: ${slot.startTime} - ${slot.endTime}',
+                                                ),
+                                              ],
+                                            ),
+                                          );
                                     }).toList(),
                                   ),
                                   if (selectedSchedule!.notes.isNotEmpty)
@@ -207,9 +231,8 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
                       ],
                     );
                   },
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (error, stack) => Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -262,12 +285,10 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
                             },
                           ),
                         ),
-                        loading: () => const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                        error: (error, stack) => Center(
-                          child: Text('Error: $error'),
-                        ),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (error, stack) =>
+                            Center(child: Text('Error: $error')),
                       ),
                       if (selectedChildren.isNotEmpty) ...[
                         const SizedBox(height: 16),
@@ -298,10 +319,7 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
               // Existing Groups List
               const Text(
                 'Existing Groups',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               groupsAsyncValue.when(
@@ -315,7 +333,8 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
                       child: ListTile(
                         title: Text(group.name),
                         subtitle: Text(
-                            '${group.childrenIds.length} children assigned'),
+                          '${group.childrenIds.length} children assigned',
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -353,7 +372,9 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
 
   void _createGroup() async {
     try {
-      await ref.read(groupAssignmentsProvider.notifier).createGroup(
+      await ref
+          .read(groupAssignmentsProvider.notifier)
+          .createGroup(
             categoryId: selectedCategory!.id,
             sheikhId: selectedSheikh!.id,
             scheduleId: selectedSchedule!.id,
@@ -376,9 +397,9 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating group: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error creating group: $e')));
       }
     }
   }
@@ -386,9 +407,7 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
   void _editGroup(GroupAssignmentModel group) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => EditGroupScreen(group: group),
-      ),
+      MaterialPageRoute(builder: (context) => EditGroupScreen(group: group)),
     );
   }
 
@@ -419,9 +438,9 @@ class _GroupAssignmentScreenState extends ConsumerState<GroupAssignmentScreen> {
           const SnackBar(content: Text('Group deleted successfully!')),
         );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting group: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error deleting group: $e')));
       }
     }
   }

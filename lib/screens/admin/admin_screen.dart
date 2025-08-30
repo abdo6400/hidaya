@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/controllers/auth_controller.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
-import 'package:hidaya/screens/admin/assign_child_screen.dart';
 import 'package:hidaya/screens/admin/admin_dashboard_screen.dart';
 import 'package:hidaya/screens/admin/parents_screen.dart';
 import 'package:quickalert/quickalert.dart';

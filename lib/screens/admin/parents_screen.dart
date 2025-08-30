@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hidaya/screens/admin/assign_child_screen.dart';
 import '../../controllers/parents_controller.dart';
 import '../../controllers/children_controller.dart';
 import '../../models/user_model.dart';
