@@ -21,7 +21,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-        
           centerTitle: true,
           actions: [
             IconButton(
@@ -499,7 +498,6 @@ class _ActivityCard extends StatelessWidget {
     if (type == 'task') {
       final childName = activity['childName'] as String;
       final taskTitle = activity['taskTitle'] as String;
-      final status = activity['status'] as String;
 
       if (action == 'completed_task') {
         title = 'تم إكمال مهمة';

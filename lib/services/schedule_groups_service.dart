@@ -137,14 +137,14 @@ class ScheduleGroupsService {
     final result = <Map<String, dynamic>>[];
 
     for (var group in groups) {
-      final childrenCount = await _getChildrenCountForGroup(group.id);
+      final childrenCount = await getChildrenCountForGroup(group.id);
       result.add({'group': group, 'childrenCount': childrenCount});
     }
 
     return result;
   }
 
-  Future<int> _getChildrenCountForGroup(String groupId) async {
+  Future<int> getChildrenCountForGroup(String groupId) async {
     final snapshot = await _firestore
         .collection('group_children')
         .where('groupId', isEqualTo: groupId)

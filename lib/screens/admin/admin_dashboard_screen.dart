@@ -27,7 +27,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-       
         body: Column(
           children: [
             // Tab Bar
@@ -65,7 +64,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
     if (result == true) {
       // Refresh the groups list
-      ref.invalidate(scheduleGroupsWithCountControllerProvider('admin'));
+      ref.invalidate(scheduleGroupsControllerProvider('all'));
     }
   }
 }
@@ -75,16 +74,14 @@ class _GroupsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groupsAsync = ref.watch(
-      scheduleGroupsWithCountControllerProvider('admin'),
-    );
+    final groupsAsync = ref.watch(scheduleGroupsControllerProvider('all'));
 
     return groupsAsync.when(
       loading: () => const LoadingIndicator(),
       error: (error, stack) =>
           app_error.AppErrorWidget(message: error.toString()),
-      data: (groupsData) {
-        if (groupsData.isEmpty) {
+      data: (groups) {
+        if (groups.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -107,19 +104,42 @@ class _GroupsTab extends ConsumerWidget {
 
         return RefreshIndicator(
           onRefresh: () => ref
-              .read(scheduleGroupsWithCountControllerProvider('admin').notifier)
-              .refresh(),
+              .read(scheduleGroupsControllerProvider('all').notifier)
+              .loadScheduleGroups(),
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: groupsData.length,
+            itemCount: groups.length,
             itemBuilder: (context, index) {
-              final group = groupsData[index]['group'] as ScheduleGroupModel;
-              final childrenCount = groupsData[index]['childrenCount'] as int;
-              return _GroupCard(group: group, childrenCount: childrenCount);
+              final group = groups[index];
+              return _GroupCardWithChildrenCount(group: group);
             },
           ),
         );
       },
+    );
+  }
+}
+
+class _GroupCardWithChildrenCount extends ConsumerWidget {
+  final ScheduleGroupModel group;
+
+  const _GroupCardWithChildrenCount({required this.group});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Get children count for this group
+    final childrenCountAsync = ref.watch(
+      FutureProvider.family<int, String>((ref, groupId) async {
+        final service = ref.read(scheduleGroupsServiceProvider);
+        return await service.getChildrenCountForGroup(groupId);
+      })(group.id),
+    );
+
+    return childrenCountAsync.when(
+      loading: () => _GroupCard(group: group, childrenCount: 0),
+      error: (_, __) => _GroupCard(group: group, childrenCount: 0),
+      data: (childrenCount) =>
+          _GroupCard(group: group, childrenCount: childrenCount),
     );
   }
 }

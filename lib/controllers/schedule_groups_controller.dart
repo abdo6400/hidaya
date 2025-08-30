@@ -44,7 +44,12 @@ class ScheduleGroupsController
   Future<void> loadScheduleGroups() async {
     state = const AsyncValue.loading();
     try {
-      final groups = await _service.getScheduleGroupsBySheikh(_sheikhId);
+      List<ScheduleGroupModel> groups;
+      if (_sheikhId == 'all') {
+        groups = await _service.getAllScheduleGroups();
+      } else {
+        groups = await _service.getScheduleGroupsBySheikh(_sheikhId);
+      }
       state = AsyncValue.data(groups);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
