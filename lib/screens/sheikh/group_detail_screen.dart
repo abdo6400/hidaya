@@ -8,6 +8,9 @@ import '../../services/group_children_service.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/loading_indicator.dart';
 import '../../widgets/error_widget.dart' as app_error;
+import 'assign_children_screen.dart';
+import 'assign_tasks_screen.dart';
+import 'child_profile_screen.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final ScheduleGroupModel group;
@@ -157,11 +160,19 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
     );
   }
 
-  void _addChildToGroup() {
-    // TODO: Navigate to add child screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('إضافة طفل - سيتم تنفيذها قريباً')),
+  void _addChildToGroup() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => AssignChildrenScreen(group: widget.group),
+      ),
     );
+
+    if (result == true) {
+      // Refresh the children tab
+      setState(() {
+        // This will trigger a rebuild of the children tab
+      });
+    }
   }
 }
 
@@ -256,6 +267,13 @@ class _ChildCard extends StatelessWidget {
         ),
         title: Text(child.name),
         subtitle: Text('العمر: ${child.age}'),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ChildProfileScreen(child: child),
+            ),
+          );
+        },
         trailing: PopupMenuButton<String>(
           onSelected: (value) => _handleMenuAction(context, value),
           itemBuilder: (context) => [
@@ -301,9 +319,10 @@ class _ChildCard extends StatelessWidget {
   void _handleMenuAction(BuildContext context, String action) {
     switch (action) {
       case 'tasks':
-        // TODO: Navigate to child tasks screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('عرض مهام الطفل - سيتم تنفيذها قريباً')),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => AssignTasksScreen(group: group),
+          ),
         );
         break;
       case 'progress':
