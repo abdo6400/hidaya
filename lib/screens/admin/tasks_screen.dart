@@ -1,168 +1,333 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../controllers/tasks_controller.dart';
-import '../../models/task_model.dart';
-import '../../models/category_model.dart';
-import '../../controllers/category_controller.dart';
+import 'package:hidaya/utils/constants.dart';
+import 'package:hidaya/utils/app_theme.dart';
+import 'package:hidaya/controllers/tasks_controller.dart';
+import 'package:hidaya/models/task_model.dart';
+import 'package:hidaya/widgets/loading_indicator.dart';
+import 'package:hidaya/widgets/error_widget.dart' as app_error;
+import 'package:quickalert/quickalert.dart';
 
 class TasksScreen extends ConsumerStatefulWidget {
   const TasksScreen({super.key});
 
   @override
-  ConsumerState<TasksScreen> createState() => _TaskScreenState();
+  ConsumerState<TasksScreen> createState() => _TasksScreenState();
 }
 
-class _TaskScreenState extends ConsumerState<TasksScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _maxPointsController = TextEditingController();
-  final _searchController = TextEditingController();
-
-  String? _selectedCategoryId;
-  TaskType _selectedTaskType = TaskType.points;
-  String _searchQuery = "";
-
+class _TasksScreenState extends ConsumerState<TasksScreen> {
   @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.trim().toLowerCase();
-      });
-    });
-  }
+  Widget build(BuildContext context) {
+    final tasksAsync = ref.watch(taskControllerProvider);
+    
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      body: CustomScrollView(
+        slivers: [
+          // Header
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.assignment,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'إدارة المهام التعليمية',
+                              style: AppTheme.islamicTitleStyle.copyWith(
+                                color: Colors.white,
+                                fontSize: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'إنشاء وإدارة المهام التعليمية وتعيينها للطلاب',
+                              style: AppTheme.arabicTextStyle.copyWith(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
 
-  void _showAddEditDialog({TaskModel? task, required List<CategoryModel> categories}) {
-    if (task != null) {
-      _titleController.text = task.title;
-      _maxPointsController.text = task.maxPoints.toString();
-      _selectedCategoryId = task.categoryId;
-      _selectedTaskType = task.type;
-    } else {
-      _titleController.clear();
-      _maxPointsController.text = '10';
-      _selectedCategoryId = null;
-      _selectedTaskType = TaskType.points;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
-            title: Text(task == null ? 'إضافة مهمة' : 'تعديل مهمة'),
-            content: SingleChildScrollView(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+          // Stats
+          SliverToBoxAdapter(
+            child: tasksAsync.when(
+              data: (tasks) => Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
                   children: [
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'العنوان',
-                        border: OutlineInputBorder(),
+                    Expanded(
+                      child: _buildStatCard(
+                        'إجمالي المهام',
+                        '${tasks.length}',
+                        Icons.assignment,
+                        AppTheme.primaryColor,
                       ),
-                      validator: (value) =>
-                          value == null || value.isEmpty ? 'الرجاء إدخال العنوان' : null,
                     ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<TaskType>(
-                      value: _selectedTaskType,
-                      decoration: const InputDecoration(
-                        labelText: 'نوع المهمة',
-                        border: OutlineInputBorder(),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildStatCard(
+                        'المهام النشطة',
+                        '${tasks.length}',
+                        Icons.play_circle,
+                        AppTheme.successColor,
                       ),
-                      items: TaskType.values.map((type) {
-                        return DropdownMenuItem(value: type, child: Text(_getTaskTypeLabel(type)));
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() {
-                            _selectedTaskType = value;
-                            if (value == TaskType.yesNo) {
-                              _maxPointsController.text = '1';
-                            } else if (_maxPointsController.text == '1') {
-                              _maxPointsController.text = '10';
-                            }
-                          });
-                        }
-                      },
                     ),
-                    const SizedBox(height: 16),
-                    if (_selectedTaskType != TaskType.yesNo)
-                      TextFormField(
-                        controller: _maxPointsController,
-                        decoration: const InputDecoration(
-                          labelText: 'الحد الأقصى للنقاط',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          final points = int.tryParse(value ?? '');
-                          if (points == null || points <= 0) {
-                            return 'أدخل رقمًا صحيحًا';
-                          }
-                          return null;
-                        },
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildStatCard(
+                        'المهام المكتملة',
+                        '0',
+                        Icons.check_circle,
+                        AppTheme.infoColor,
                       ),
-                    if (_selectedTaskType == TaskType.yesNo)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text(
-                          'مهمة نعم/لا تكون النقاط فيها 1 لـ نعم و 0 لـ لا',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String?>(
-                      value: _selectedCategoryId,
-                      decoration: const InputDecoration(
-                        labelText: 'التصنيف (اختياري)',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('بدون')),
-                        ...categories.map((category) {
-                          return DropdownMenuItem(value: category.id, child: Text(category.name));
-                        }),
-                      ],
-                      onChanged: (value) => setDialogState(() => _selectedCategoryId = value),
                     ),
                   ],
                 ),
               ),
+              loading: () => const LoadingIndicator(),
+              error: (error, stack) => app_error.AsyncErrorWidget(
+                error: error,
+                stackTrace: stack,
+                onRetry: () => ref.refresh(taskControllerProvider),
+              ),
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-              ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    final maxPoints = _selectedTaskType == TaskType.yesNo
-                        ? 1
-                        : int.parse(_maxPointsController.text);
+          ),
 
-                    final newTask = TaskModel(
-                      id: task?.id ?? '',
-                      title: _titleController.text.trim(),
-                      type: _selectedTaskType,
-                      categoryId: _selectedCategoryId,
-                      maxPoints: maxPoints,
-                    );
+          // Tasks List
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'قائمة المهام',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () => _showAddTaskDialog(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('إضافة مهمة'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.secondaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Tasks List
+                  tasksAsync.when(
+                    data: (tasks) => tasks.isEmpty
+                        ? _buildEmptyState()
+                        : Column(
+                            children: tasks.map((task) => _buildTaskCard(task)).toList(),
+                          ),
+                    loading: () => const LoadingIndicator(),
+                    error: (error, stack) => app_error.AsyncErrorWidget(
+                      error: error,
+                      stackTrace: stack,
+                      onRetry: () => ref.refresh(taskControllerProvider),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                    final controller = ref.read(taskControllerProvider.notifier);
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
 
-                    if (task == null) {
-                      await controller.addTask(newTask);
-                    } else {
-                      await controller.updateTask(newTask);
-                    }
-
-                    if (mounted) Navigator.pop(context);
-                  }
-                },
-                child: Text(task == null ? 'إضافة' : 'تعديل'),
+  Widget _buildTaskCard(TaskModel task) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 4,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Row
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.assignment,
+                      color: AppTheme.primaryColor,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          task.title,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'النوع: ${_getTaskTypeText(task.type)}',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) => _handleMenuAction(value, task),
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: ListTile(
+                          leading: Icon(Icons.edit),
+                          title: Text('تعديل'),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: ListTile(
+                          leading: Icon(Icons.delete, color: Colors.red),
+                          title: Text('حذف', style: TextStyle(color: Colors.red)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Task Details
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTaskDetail(
+                      'النقاط القصوى',
+                      '${task.maxPoints}',
+                      Icons.star,
+                      AppTheme.warningColor,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildTaskDetail(
+                      'الفئة',
+                      task.categoryId ?? 'غير محدد',
+                      Icons.category,
+                      AppTheme.infoColor,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -171,146 +336,63 @@ class _TaskScreenState extends ConsumerState<TasksScreen> {
     );
   }
 
-  String _getTaskTypeLabel(TaskType type) {
-    switch (type) {
-      case TaskType.points:
-        return 'نقاط (١-١٠)';
-      case TaskType.yesNo:
-        return 'نعم/لا';
-      case TaskType.custom:
-        return 'نقاط مخصصة';
-    }
-  }
-
-  String _getCategoryName(String? categoryId, List<CategoryModel> categories) {
-    if (categoryId == null) return 'بدون تصنيف';
-    return categories
-        .firstWhere(
-          (c) => c.id == categoryId,
-          orElse: () => CategoryModel(id: '', name: 'غير معروف', description: ''),
-        )
-        .name;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tasksAsync = ref.watch(taskControllerProvider);
-    final categoriesAsync = ref.watch(categoryControllerProvider);
-
-    return Scaffold(
-      floatingActionButton: categoriesAsync.when(
-        data: (categories) => FloatingActionButton(
-          heroTag: null,
-          onPressed: () => _showAddEditDialog(categories: categories),
-          child: const Icon(Icons.add),
+  Widget _buildTaskDetail(String title, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 20,
+          ),
         ),
-        loading: () => const SizedBox(),
-        error: (_, __) => const SizedBox(),
-      ),
-      body: Column(
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: "ابحث عن مهمة...",
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = "");
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+          Icon(
+            Icons.assignment_outlined,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'لا توجد مهام بعد',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Colors.grey[600],
             ),
           ),
-          Expanded(
-            child: tasksAsync.when(
-              data: (tasks) => categoriesAsync.when(
-                data: (categories) {
-                  // 🔎 Apply search filter
-                  final filteredTasks = tasks.where((t) {
-                    return t.title.toLowerCase().contains(_searchQuery);
-                  }).toList();
-
-                  if (filteredTasks.isEmpty) {
-                    return const Center(child: Text("لا توجد مهام مطابقة"));
-                  }
-
-                  return ListView.builder(
-                    itemCount: filteredTasks.length,
-                    padding: EdgeInsets.only(bottom: 100),
-                    itemBuilder: (context, index) {
-                      final task = filteredTasks[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: ListTile(
-                          title: Text(task.title),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('النوع: ${_getTaskTypeLabel(task.type)}'),
-                              Text('التصنيف: ${_getCategoryName(task.categoryId, categories)}'),
-                              if (task.type == TaskType.yesNo)
-                                const Text('التقييم: نعم = ١ نقطة ، لا = ٠ نقاط')
-                              else
-                                Text('الحد الأقصى للنقاط: ${task.maxPoints}'),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit, color: Colors.blue),
-                                onPressed: () =>
-                                    _showAddEditDialog(task: task, categories: categories),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => showDialog(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: const Text('حذف مهمة'),
-                                    content: Text('هل تريد حذف "${task.title}"؟'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(ctx),
-                                        child: const Text('إلغاء'),
-                                      ),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.red,
-                                        ),
-                                        onPressed: () async {
-                                          Navigator.pop(ctx);
-                                          await ref
-                                              .read(taskControllerProvider.notifier)
-                                              .deleteTask(task.id);
-                                        },
-                                        child: const Text('حذف'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          isThreeLine: true,
-                        ),
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text("خطأ في تحميل التصنيفات: $e")),
-              ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text("خطأ في تحميل المهام: $e")),
+          const SizedBox(height: 8),
+          Text(
+            'قم بإضافة مهمة جديدة للبدء',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[500],
             ),
           ),
         ],
@@ -318,11 +400,190 @@ class _TaskScreenState extends ConsumerState<TasksScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _maxPointsController.dispose();
-    _searchController.dispose();
-    super.dispose();
+  String _getTaskTypeText(TaskType type) {
+    switch (type) {
+      case TaskType.points:
+        return 'نقاط';
+      case TaskType.yesNo:
+        return 'نعم/لا';
+      case TaskType.custom:
+        return 'مخصص';
+    }
+  }
+
+  void _handleMenuAction(String action, TaskModel task) {
+    switch (action) {
+      case 'edit':
+        _showEditTaskDialog(task);
+        break;
+      case 'delete':
+        _showDeleteConfirmation(task);
+        break;
+    }
+  }
+
+  void _showAddTaskDialog() {
+    final titleController = TextEditingController();
+    final maxPointsController = TextEditingController(text: '10');
+    TaskType selectedType = TaskType.points;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إضافة مهمة جديدة'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'عنوان المهمة',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: maxPointsController,
+              decoration: const InputDecoration(
+                labelText: 'النقاط القصوى',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<TaskType>(
+              value: selectedType,
+              decoration: const InputDecoration(
+                labelText: 'نوع المهمة',
+                border: OutlineInputBorder(),
+              ),
+              items: TaskType.values.map((type) {
+                return DropdownMenuItem(
+                  value: type,
+                  child: Text(_getTaskTypeText(type)),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  selectedType = value;
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (titleController.text.isNotEmpty) {
+                final task = TaskModel(
+                  id: '',
+                  title: titleController.text,
+                  type: selectedType,
+                  maxPoints: int.tryParse(maxPointsController.text) ?? 10,
+                );
+                
+                await ref.read(taskControllerProvider.notifier).addItem(task);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('إضافة'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditTaskDialog(TaskModel task) {
+    final titleController = TextEditingController(text: task.title);
+    final maxPointsController = TextEditingController(text: task.maxPoints.toString());
+    TaskType selectedType = task.type;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تعديل المهمة'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'عنوان المهمة',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: maxPointsController,
+              decoration: const InputDecoration(
+                labelText: 'النقاط القصوى',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<TaskType>(
+              value: selectedType,
+              decoration: const InputDecoration(
+                labelText: 'نوع المهمة',
+                border: OutlineInputBorder(),
+              ),
+              items: TaskType.values.map((type) {
+                return DropdownMenuItem(
+                  value: type,
+                  child: Text(_getTaskTypeText(type)),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  selectedType = value;
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (titleController.text.isNotEmpty) {
+                final updatedTask = TaskModel(
+                  id: task.id,
+                  title: titleController.text,
+                  type: selectedType,
+                  maxPoints: int.tryParse(maxPointsController.text) ?? 10,
+                );
+                
+                await ref.read(taskControllerProvider.notifier).updateItem(updatedTask);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(TaskModel task) {
+    QuickAlert.show(
+      context: context,
+      type: QuickAlertType.confirm,
+      title: 'تأكيد الحذف',
+      text: 'هل أنت متأكد من حذف المهمة "${task.title}"؟',
+      confirmBtnText: 'حذف',
+      cancelBtnText: 'إلغاء',
+      onConfirmBtnTap: () async {
+        await ref.read(taskControllerProvider.notifier).deleteItem(task.id);
+        Navigator.pop(context);
+      },
+    );
   }
 }

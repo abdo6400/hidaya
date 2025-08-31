@@ -22,21 +22,46 @@ class TaskModel {
     return TaskModel(
       id: doc.id,
       title: data['title'] ?? '',
-      type: TaskType.values.firstWhere(
-        (e) => e.toString() == 'TaskType.${data['type']}',
-        orElse: () => TaskType.points,
-      ),
+      type: _parseTaskType(data['type']),
       categoryId: data['categoryId'],
       maxPoints: data['maxPoints'] ?? 10,
     );
   }
 
+  static TaskType _parseTaskType(dynamic type) {
+    if (type is String) {
+      switch (type.toLowerCase()) {
+        case 'points':
+          return TaskType.points;
+        case 'yesno':
+        case 'yes_no':
+          return TaskType.yesNo;
+        case 'custom':
+          return TaskType.custom;
+        default:
+          return TaskType.points;
+      }
+    }
+    return TaskType.points;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'title': title,
-      'type': type.toString().split('.').last,
+      'type': _taskTypeToString(type),
       'categoryId': categoryId,
       'maxPoints': maxPoints,
     };
+  }
+
+  static String _taskTypeToString(TaskType type) {
+    switch (type) {
+      case TaskType.points:
+        return 'points';
+      case TaskType.yesNo:
+        return 'yesno';
+      case TaskType.custom:
+        return 'custom';
+    }
   }
 }

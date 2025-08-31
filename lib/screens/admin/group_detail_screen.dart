@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hidaya/controllers/child_tasks_controller.dart';
 import 'package:hidaya/controllers/category_controller.dart';
-import 'package:hidaya/controllers/reports_controller.dart';
 import 'package:hidaya/models/category_model.dart';
 import 'package:hidaya/models/child_model.dart';
 import 'package:hidaya/models/schedule_group_model.dart';
 import 'package:hidaya/models/schedule_model.dart';
+import 'package:hidaya/models/user_model.dart';
 import 'package:hidaya/services/group_children_service.dart';
 import 'package:hidaya/widgets/error_widget.dart' as app_error;
 import 'package:hidaya/widgets/loading_indicator.dart';
+import 'package:hidaya/controllers/schedule_groups_controller.dart';
+import 'package:hidaya/controllers/group_children_controller.dart';
+import 'package:hidaya/controllers/sheikhs_controller.dart';
 import 'assign_children_screen.dart';
+import 'edit_group_screen.dart';
 
 class AdminGroupDetailScreen extends ConsumerStatefulWidget {
   final ScheduleGroupModel group;
@@ -18,25 +21,47 @@ class AdminGroupDetailScreen extends ConsumerStatefulWidget {
   const AdminGroupDetailScreen({super.key, required this.group});
 
   @override
-  ConsumerState<AdminGroupDetailScreen> createState() =>
-      _AdminGroupDetailScreenState();
+  ConsumerState<AdminGroupDetailScreen> createState() => _AdminGroupDetailScreenState();
 }
 
 class _AdminGroupDetailScreenState extends ConsumerState<AdminGroupDetailScreen>
     with TickerProviderStateMixin {
-  int _currentIndex = 0;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _navigateToAssignChildren() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AssignChildrenScreen(group: widget.group)),
+    ).then((_) {
+      // Refresh the children list when returning from the assign screen
+      if (mounted) {
+        ref.invalidate(groupChildrenControllerProvider);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.group.name),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => _editGroup(),
-          ),
-        ],
+        actions: [IconButton(icon: const Icon(Icons.edit), onPressed: () => _editGroup())],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToAssignChildren,
+        child: const Icon(Icons.person_add),
       ),
       body: Column(
         children: [
@@ -45,78 +70,55 @@ class _AdminGroupDetailScreenState extends ConsumerState<AdminGroupDetailScreen>
 
           // Tab Bar
           TabBar(
-            controller: TabController(
-              length: 3,
-              vsync: this,
-              initialIndex: _currentIndex,
-            ),
-            onTap: (index) => setState(() => _currentIndex = index),
+            controller: _tabController,
             tabs: const [
               Tab(text: 'الأطفال'),
               Tab(text: 'المواعيد'),
-              Tab(text: 'التقدم'),
             ],
+            labelColor: Theme.of(context).primaryColor,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Theme.of(context).primaryColor,
           ),
 
           // Tab Content
           Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
+            child: TabBarView(
+              controller: _tabController,
               children: [
                 _ChildrenTab(group: widget.group),
                 _ScheduleTab(group: widget.group),
-                _ProgressTab(group: widget.group),
               ],
             ),
           ),
         ],
       ),
-      floatingActionButton: _currentIndex == 0
-          ? FloatingActionButton(
-              onPressed: () => _addChildToGroup(),
-              child: const Icon(Icons.person_add),
-            )
-          : null,
     );
   }
 
   Widget _buildGroupInfoCard() {
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16.0),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    widget.group.name,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: Text(widget.group.name, style: Theme.of(context).textTheme.headlineSmall),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: widget.group.isActive
-                        ? Colors.green[100]
-                        : Colors.grey[100],
+                    color: widget.group.isActive ? Colors.green[100] : Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     widget.group.isActive ? 'نشط' : 'غير نشط',
                     style: TextStyle(
                       fontSize: 12,
-                      color: widget.group.isActive
-                          ? Colors.green[700]
-                          : Colors.grey[600],
+                      color: widget.group.isActive ? Colors.green[700] : Colors.grey[600],
                     ),
                   ),
                 ),
@@ -149,19 +151,25 @@ class _AdminGroupDetailScreenState extends ConsumerState<AdminGroupDetailScreen>
                 const SizedBox(width: 4),
                 Consumer(
                   builder: (context, ref, child) {
-                    final sheikhNameAsync = ref.watch(
-                      sheikhNameProvider(widget.group.sheikhId),
-                    );
-                    return sheikhNameAsync.when(
+                    final sheikhAsync = ref.watch(sheikhsControllerProvider);
+                    return sheikhAsync.when(
                       loading: () => const Text('جاري التحميل...'),
-                      error: (_, __) => Text(
-                        'الشيخ: ${widget.group.sheikhId}',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      ),
-                      data: (sheikhName) => Text(
-                        'الشيخ: $sheikhName',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      ),
+                      error: (error, stack) => Text('خطأ: $error'),
+                      data: (sheikhs) {
+                        final sheikh = sheikhs.firstWhere(
+                          (s) => s.id == widget.group.sheikhId,
+                          orElse: () => AppUser(
+                            id: '',
+                            username: 'غير محدد',
+                            role: UserRole.sheikh,
+                            name: '',
+                            email: '',
+                            phone: '',
+                            status: '',
+                          ),
+                        );
+                        return Text(sheikh.username);
+                      },
                     );
                   },
                 ),
@@ -174,27 +182,18 @@ class _AdminGroupDetailScreenState extends ConsumerState<AdminGroupDetailScreen>
                 const SizedBox(width: 4),
                 Consumer(
                   builder: (context, ref, child) {
-                    final categoriesAsync = ref.watch(
-                      categoryControllerProvider,
-                    );
+                    final categoriesAsync = ref.watch(categoryControllerProvider);
                     return categoriesAsync.when(
                       loading: () => const Text('جاري التحميل...'),
                       error: (error, stack) => const Text('خطأ في التحميل'),
                       data: (categories) {
                         final category = categories.firstWhere(
                           (cat) => cat.id == widget.group.categoryId,
-                          orElse: () => CategoryModel(
-                            id: '',
-                            name: 'غير محدد',
-                            description: '',
-                          ),
+                          orElse: () => CategoryModel(id: '', name: 'غير محدد', description: ''),
                         );
                         return Text(
                           'التصنيف: ${category.name}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                         );
                       },
                     );
@@ -208,25 +207,22 @@ class _AdminGroupDetailScreenState extends ConsumerState<AdminGroupDetailScreen>
     );
   }
 
-  void _editGroup() {
-    // TODO: Navigate to edit group screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تعديل المجموعة - سيتم تنفيذها قريباً')),
-    );
-  }
+  Future<void> _editGroup() async {
+    final result = await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => EditGroupScreen(group: widget.group)));
 
-  void _addChildToGroup() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => AssignChildrenScreen(group: widget.group),
-      ),
-    );
-
-    if (result == true) {
-      // Refresh the children tab
-      setState(() {
-        // This will trigger a rebuild of the children tab
-      });
+    if (result == true && mounted) {
+      // Refresh the group data
+      ref.invalidate(scheduleGroupsControllerProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تحديث بيانات المجموعة بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     }
   }
 }
@@ -241,13 +237,23 @@ class _ChildrenTab extends ConsumerStatefulWidget {
 }
 
 class _ChildrenTabState extends ConsumerState<_ChildrenTab> {
-  final GroupChildrenService _groupChildrenService = GroupChildrenService();
-  late Future<List<ChildModel>> _childrenFuture;
+  late final Future<List<ChildModel>> _childrenFuture;
 
   @override
   void initState() {
     super.initState();
-    _childrenFuture = _groupChildrenService.getChildrenInGroup(widget.group.id);
+    _loadChildren();
+  }
+
+  Future<void> _loadChildren() async {
+    try {
+      final groupChildrenService = GroupChildrenService();
+      _childrenFuture = groupChildrenService.getChildrenInGroup(widget.group.id);
+    } catch (e) {
+      // Handle error
+      debugPrint('Error loading children: $e');
+      _childrenFuture = Future.value(<ChildModel>[]);
+    }
   }
 
   @override
@@ -270,11 +276,7 @@ class _ChildrenTabState extends ConsumerState<_ChildrenTab> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.child_care_outlined,
-                  size: 64,
-                  color: Colors.grey[400],
-                ),
+                Icon(Icons.child_care_outlined, size: 64, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
                   'لا يوجد أطفال في هذه المجموعة',
@@ -295,7 +297,11 @@ class _ChildrenTabState extends ConsumerState<_ChildrenTab> {
           itemCount: children.length,
           itemBuilder: (context, index) {
             final child = children[index];
-            return _ChildCard(child: child, group: widget.group);
+            return _ChildCard(
+              child: child,
+              group: widget.group,
+              onRemoved: _loadChildren, // Refresh the list when a child is removed
+            );
           },
         );
       },
@@ -306,8 +312,9 @@ class _ChildrenTabState extends ConsumerState<_ChildrenTab> {
 class _ChildCard extends StatelessWidget {
   final ChildModel child;
   final ScheduleGroupModel group;
+  final VoidCallback? onRemoved;
 
-  const _ChildCard({required this.child, required this.group});
+  const _ChildCard({required this.child, required this.group, this.onRemoved});
 
   @override
   Widget build(BuildContext context) {
@@ -327,22 +334,12 @@ class _ChildCard extends StatelessWidget {
           itemBuilder: (context) => [
             const PopupMenuItem(
               value: 'view',
-              child: Row(
-                children: [
-                  Icon(Icons.visibility),
-                  SizedBox(width: 8),
-                  Text('عرض الملف'),
-                ],
-              ),
+              child: Row(children: [Icon(Icons.visibility), SizedBox(width: 8), Text('عرض الملف')]),
             ),
             const PopupMenuItem(
               value: 'tasks',
               child: Row(
-                children: [
-                  Icon(Icons.assignment),
-                  SizedBox(width: 8),
-                  Text('عرض المهام'),
-                ],
+                children: [Icon(Icons.assignment), SizedBox(width: 8), Text('عرض المهام')],
               ),
             ),
             const PopupMenuItem(
@@ -351,10 +348,7 @@ class _ChildCard extends StatelessWidget {
                 children: [
                   Icon(Icons.person_remove, color: Colors.red),
                   SizedBox(width: 8),
-                  Text(
-                    'إزالة من المجموعة',
-                    style: TextStyle(color: Colors.red),
-                  ),
+                  Text('إزالة من المجموعة', style: TextStyle(color: Colors.red)),
                 ],
               ),
             ),
@@ -368,19 +362,43 @@ class _ChildCard extends StatelessWidget {
     switch (action) {
       case 'view':
         // TODO: Navigate to child profile screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('عرض ملف الطفل - سيتم تنفيذها قريباً')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('عرض ملف الطفل - سيتم تنفيذها قريباً')));
         break;
       case 'tasks':
         // TODO: Navigate to child tasks screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('عرض مهام الطفل - سيتم تنفيذها قريباً')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('عرض مهام الطفل - سيتم تنفيذها قريباً')));
         break;
       case 'remove':
         _showRemoveChildDialog(context);
         break;
+    }
+  }
+
+  Future<void> _removeChild(BuildContext context) async {
+    try {
+      final groupChildrenService = GroupChildrenService();
+      await groupChildrenService.removeChildFromGroup(group.id, child.id);
+      if (onRemoved != null) {
+        onRemoved!();
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تمت إزالة الطفل من المجموعة بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في إزالة الطفل: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -391,19 +409,11 @@ class _ChildCard extends StatelessWidget {
         title: const Text('إزالة من المجموعة'),
         content: Text('هل أنت متأكد من إزالة ${child.name} من المجموعة؟'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
           ElevatedButton(
-            onPressed: () {
-              // TODO: Remove child from group
+            onPressed: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('إزالة الطفل - سيتم تنفيذها قريباً'),
-                ),
-              );
+              await _removeChild(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('إزالة'),
@@ -463,181 +473,4 @@ class _ScheduleTab extends StatelessWidget {
   }
 }
 
-class _ProgressTab extends ConsumerWidget {
-  final ScheduleGroupModel group;
 
-  const _ProgressTab({required this.group});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final groupProgress = ref.watch(groupProgressControllerProvider(group.id));
-
-    return groupProgress.when(
-      loading: () => const LoadingIndicator(),
-      error: (error, stack) =>
-          app_error.AppErrorWidget(message: error.toString()),
-      data: (progress) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // Progress Cards
-              Row(
-                children: [
-                  Expanded(
-                    child: _ProgressCard(
-                      title: 'إجمالي المهام',
-                      value: progress['totalTasks'].toString(),
-                      icon: Icons.assignment,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ProgressCard(
-                      title: 'المهام المكتملة',
-                      value: progress['completedTasks'].toString(),
-                      icon: Icons.check_circle,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ProgressCard(
-                      title: 'نسبة الإنجاز',
-                      value:
-                          '${progress['completionRate'].toStringAsFixed(1)}%',
-                      icon: Icons.trending_up,
-                      color: Colors.orange,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ProgressCard(
-                      title: 'متوسط الدرجات',
-                      value: progress['averageMark'].toStringAsFixed(1),
-                      icon: Icons.grade,
-                      color: Colors.purple,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Ranking
-              const Text(
-                'ترتيب الأطفال',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Expanded(child: _buildRankingList(ref)),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildRankingList(WidgetRef ref) {
-    final ranking = ref.watch(childRankingControllerProvider(group.id));
-
-    return ranking.when(
-      loading: () => const LoadingIndicator(),
-      error: (error, stack) =>
-          app_error.AppErrorWidget(message: error.toString()),
-      data: (rankingList) {
-        if (rankingList.isEmpty) {
-          return const Center(child: Text('لا توجد بيانات للترتيب'));
-        }
-
-        return ListView.builder(
-          itemCount: rankingList.length,
-          itemBuilder: (context, index) {
-            final rank = rankingList[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: _getRankColor(rank['rank'] as int),
-                  child: Text(
-                    rank['rank'].toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                title: Text('الطفل ${rank['childId']}'), // TODO: Get child name
-                subtitle: Text('النقاط: ${rank['score'].toStringAsFixed(1)}'),
-                trailing: Text(
-                  '${rank['completedTasks']} مهام مكتملة',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Color _getRankColor(int rank) {
-    switch (rank) {
-      case 1:
-        return Colors.amber;
-      case 2:
-        return Colors.grey[400]!;
-      case 3:
-        return Colors.brown[300]!;
-      default:
-        return Colors.blue;
-    }
-  }
-}
-
-class _ProgressCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _ProgressCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

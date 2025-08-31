@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/controllers/schedule_groups_controller.dart';
 import 'package:hidaya/controllers/category_controller.dart';
-import 'package:hidaya/controllers/sheiks_controller.dart';
+import 'package:hidaya/controllers/sheikhs_controller.dart';
 import 'package:hidaya/models/schedule_group_model.dart';
 import 'package:hidaya/models/schedule_model.dart';
 import 'package:hidaya/models/category_model.dart';
@@ -50,7 +50,7 @@ class _EditGroupScreenState extends ConsumerState<EditGroupScreen> {
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoryControllerProvider);
-    final sheikhsAsync = ref.watch(sheiksControllerProvider);
+            final sheikhsAsync = ref.watch(sheikhsControllerProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('تعديل المجموعة'), centerTitle: true),
@@ -92,7 +92,7 @@ class _EditGroupScreenState extends ConsumerState<EditGroupScreen> {
               error: (error, stack) =>
                   app_error.AppErrorWidget(message: error.toString()),
               data: (categories) => DropdownButtonFormField<String>(
-                value: _selectedCategoryId,
+                initialValue: _selectedCategoryId,
                 decoration: const InputDecoration(
                   labelText: 'التصنيف',
                   border: OutlineInputBorder(),
@@ -124,7 +124,7 @@ class _EditGroupScreenState extends ConsumerState<EditGroupScreen> {
               error: (error, stack) =>
                   app_error.AppErrorWidget(message: error.toString()),
               data: (sheikhs) => DropdownButtonFormField<String>(
-                value: _selectedSheikhId,
+                initialValue: _selectedSheikhId,
                 decoration: const InputDecoration(
                   labelText: 'الشيخ',
                   border: OutlineInputBorder(),
@@ -254,8 +254,8 @@ class _EditGroupScreenState extends ConsumerState<EditGroupScreen> {
       );
 
       await ref
-          .read(scheduleGroupsControllerProvider('all').notifier)
-          .updateScheduleGroup(widget.group.id, updatedGroup);
+          .read(scheduleGroupsControllerProvider.notifier)
+          .updateScheduleGroup(updatedGroup);
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -328,7 +328,7 @@ class _TimeSlotDialogState extends ConsumerState<_TimeSlotDialog> {
         children: [
           // Day Selection
           DropdownButtonFormField<WeekDay>(
-            value: _selectedDay,
+            initialValue: _selectedDay,
             decoration: const InputDecoration(
               labelText: 'اليوم',
               border: OutlineInputBorder(),
@@ -352,7 +352,7 @@ class _TimeSlotDialogState extends ConsumerState<_TimeSlotDialog> {
             error: (error, stack) =>
                 app_error.AppErrorWidget(message: error.toString()),
             data: (categories) => DropdownButtonFormField<String>(
-              value: _selectedCategoryId,
+              initialValue: _selectedCategoryId,
               decoration: const InputDecoration(
                 labelText: 'التصنيف',
                 border: OutlineInputBorder(),

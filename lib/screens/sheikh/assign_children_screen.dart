@@ -146,7 +146,7 @@ class _AssignChildrenScreenState extends ConsumerState<AssignChildrenScreen> {
           Expanded(
             child: Consumer(
               builder: (context, ref, child) {
-                final childrenAsync = ref.watch(childrenControllerProvider(''));
+                final childrenAsync = ref.watch(childrenControllerProvider);
 
                 return childrenAsync.when(
                   loading: () => const LoadingIndicator(),

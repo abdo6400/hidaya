@@ -1,141 +1,96 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hidaya/models/child_model.dart';
-import 'package:hidaya/models/group_children_model.dart';
-import 'package:hidaya/services/group_children_service.dart';
+import '../models/child_model.dart';
+import '../services/firebase_service.dart';
+import 'base_controller.dart';
 
-// Service provider
-final groupChildrenServiceProvider = Provider<GroupChildrenService>((ref) {
-  return GroupChildrenService();
-});
+final groupChildrenControllerProvider =
+    StateNotifierProvider<GroupChildrenController, AsyncValue<List<ChildModel>>>(
+  (ref) => GroupChildrenController(FirebaseService()),
+);
 
-// Controller for managing group children assignments
-class GroupChildrenController
-    extends StateNotifier<AsyncValue<List<ChildModel>>> {
-  final GroupChildrenService _service;
+final allChildrenControllerProvider =
+    StateNotifierProvider<AllChildrenController, AsyncValue<List<ChildModel>>>(
+  (ref) => AllChildrenController(FirebaseService()),
+);
 
-  GroupChildrenController(this._service) : super(const AsyncValue.loading());
+class GroupChildrenController extends BaseController<ChildModel> {
+  final FirebaseService _firebaseService;
 
-  // Get children in a specific group
-  Future<void> getChildrenInGroup(String groupId) async {
-    state = const AsyncValue.loading();
-    try {
-      final children = await _service.getChildrenInGroup(groupId);
-      state = AsyncValue.data(children);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
+  GroupChildrenController(this._firebaseService) {
+    loadItems();
   }
 
-  // Assign a child to a group
-  Future<void> assignChildToGroup({
-    required String childId,
-    required String groupId,
-    String? notes,
-  }) async {
-    try {
-      await _service.assignChildToGroup(groupId, childId, notes: notes);
-
-      // Refresh the children list for this group
-      await getChildrenInGroup(groupId);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
-    }
+  @override
+  Future<void> loadItems() async {
+    setLoading();
+    state = await AsyncValue.guard(() => _firebaseService.getAllChildren());
   }
 
-  // Remove a child from a group
-  Future<void> removeChildFromGroup(String groupId, String childId) async {
-    try {
-      await _service.removeChildFromGroup(groupId, childId);
-
-      // Refresh the current state
-      if (state.hasValue) {
-        final currentChildren = state.value!;
-        final updatedChildren = currentChildren
-            .where((child) => child.id != childId)
-            .toList();
-        state = AsyncValue.data(updatedChildren);
-      }
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
-    }
+  @override
+  Future<void> addItem(ChildModel item) async {
+    await handleOperation(() => _firebaseService.addChild(item));
   }
 
-  // Get groups for a specific child
-  Future<List<String>> getGroupsForChild(String childId) async {
-    try {
-      return await _service.getGroupsForChild(childId);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
-    }
+  @override
+  Future<void> updateItem(ChildModel item) async {
+    await handleOperation(() => _firebaseService.updateChild(item.id, item.toMap()));
   }
 
-  // Update assignment notes
-  Future<void> updateAssignmentNotes(String assignmentId, String notes) async {
-    try {
-      await _service.updateGroupAssignmentNotes(assignmentId, notes);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
-    }
+  @override
+  Future<void> deleteItem(String itemId) async {
+    await handleOperation(() => _firebaseService.deleteChild(itemId));
   }
 
-  // Check if a child is in a group
-  Future<bool> isChildInGroup(String childId, String groupId) async {
-    try {
-      return await _service.isChildInGroup(childId, groupId);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
-    }
+  Future<void> assignChildToGroup({required String childId, required String groupId}) async {
+    await handleOperation(() => _firebaseService.assignChildToGroup(childId, groupId));
   }
 
-  // Get children count in a group
-  Future<int> getChildrenCountInGroup(String groupId) async {
-    try {
-      return await _service.getChildrenCountInGroup(groupId);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
-    }
+  Future<void> removeChildFromGroup({required String childId, required String groupId}) async {
+    await handleOperation(() => _firebaseService.removeChildFromGroup(childId, groupId));
   }
+
+  Future<List<ChildModel>> getChildrenInGroup(String groupId) async {
+    return await _firebaseService.getChildrenInGroup(groupId);
+  }
+
+  // Legacy method names for backward compatibility
+  Future<void> loadChildren() => loadItems();
+  Future<void> addChild(ChildModel child) => addItem(child);
+  Future<void> updateChild(ChildModel child) => updateItem(child);
+  Future<void> deleteChild(String childId) => deleteItem(childId);
 }
 
-// Provider for the controller
-final groupChildrenControllerProvider =
-    StateNotifierProvider<
-      GroupChildrenController,
-      AsyncValue<List<ChildModel>>
-    >((ref) {
-      final service = ref.watch(groupChildrenServiceProvider);
-      return GroupChildrenController(service);
-    });
+class AllChildrenController extends BaseController<ChildModel> {
+  final FirebaseService _firebaseService;
 
-// Provider for children in a specific group
-final groupChildrenProvider = FutureProvider.family<List<ChildModel>, String>((
-  ref,
-  groupId,
-) async {
-  final service = ref.watch(groupChildrenServiceProvider);
-  return await service.getChildrenInGroup(groupId);
-});
+  AllChildrenController(this._firebaseService) {
+    loadItems();
+  }
 
-// Provider for groups assigned to a child
-final childGroupsProvider = FutureProvider.family<List<String>, String>((
-  ref,
-  childId,
-) async {
-  final service = ref.watch(groupChildrenServiceProvider);
-  return await service.getGroupsForChild(childId);
-});
+  @override
+  Future<void> loadItems() async {
+    setLoading();
+    state = await AsyncValue.guard(() => _firebaseService.getAllChildren());
+  }
 
-// Provider for children count in a group
-final groupChildrenCountProvider = FutureProvider.family<int, String>((
-  ref,
-  groupId,
-) async {
-  final service = ref.watch(groupChildrenServiceProvider);
-  return await service.getChildrenCountInGroup(groupId);
-});
+  @override
+  Future<void> addItem(ChildModel item) async {
+    await handleOperation(() => _firebaseService.addChild(item));
+  }
+
+  @override
+  Future<void> updateItem(ChildModel item) async {
+    await handleOperation(() => _firebaseService.updateChild(item.id, item.toMap()));
+  }
+
+  @override
+  Future<void> deleteItem(String itemId) async {
+    await handleOperation(() => _firebaseService.deleteChild(itemId));
+  }
+
+  // Legacy method names for backward compatibility
+  Future<void> loadChildren() => loadItems();
+  Future<void> addChild(ChildModel child) => addItem(child);
+  Future<void> updateChild(ChildModel child) => updateItem(child);
+  Future<void> deleteChild(String childId) => deleteItem(childId);
+}

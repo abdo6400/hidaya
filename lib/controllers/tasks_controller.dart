@@ -1,57 +1,50 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/task_model.dart';
-import '../services/database_service.dart';
+import '../services/firebase_service.dart';
+import 'base_controller.dart';
+
 final taskControllerProvider =
     StateNotifierProvider<TaskController, AsyncValue<List<TaskModel>>>(
-  (ref) => TaskController(DatabaseService()),
+  (ref) => TaskController(FirebaseService()),
 );
 
-class TaskController extends StateNotifier<AsyncValue<List<TaskModel>>> {
-  final DatabaseService _dbService;
+class TaskController extends BaseController<TaskModel> {
+  final FirebaseService _firebaseService;
 
-  TaskController(this._dbService) : super(const AsyncValue.loading()) {
-    loadTasks();
+  TaskController(this._firebaseService) {
+    loadItems();
   }
 
-  /// Load all tasks
-  Future<void> loadTasks() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _dbService.getTasks());
+  @override
+  Future<void> loadItems() async {
+    setLoading();
+    state = await AsyncValue.guard(() => _firebaseService.getAllTasks());
+  }
+
+  @override
+  Future<void> addItem(TaskModel item) async {
+    await handleOperation(() => _firebaseService.addTask(item));
+  }
+
+  @override
+  Future<void> updateItem(TaskModel item) async {
+    await handleOperation(() => _firebaseService.updateTask(item));
+  }
+
+  @override
+  Future<void> deleteItem(String itemId) async {
+    await handleOperation(() => _firebaseService.deleteTask(itemId));
   }
 
   /// Load tasks for a specific category
   Future<void> loadTasksByCategory(String categoryId) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _dbService.getTasksByCategory(categoryId));
+    setLoading();
+    state = await AsyncValue.guard(() => _firebaseService.getTasksByCategory(categoryId));
   }
 
-  /// Add a new task and reload list
-  Future<void> addTask(TaskModel task) async {
-    try {
-      await _dbService.addTask(task);
-      await loadTasks();
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-
-  /// Update a task and reload list
-  Future<void> updateTask(TaskModel task) async {
-    try {
-      await _dbService.updateTask(task);
-      await loadTasks();
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-
-  /// Delete a task and reload list
-  Future<void> deleteTask(String taskId) async {
-    try {
-      await _dbService.deleteTask(taskId);
-      await loadTasks();
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
+  // Legacy method names for backward compatibility
+  Future<void> loadTasks() => loadItems();
+  Future<void> addTask(TaskModel task) => addItem(task);
+  Future<void> updateTask(TaskModel task) => updateItem(task);
+  Future<void> deleteTask(String taskId) => deleteItem(taskId);
 }

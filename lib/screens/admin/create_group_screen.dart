@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/controllers/schedule_groups_controller.dart';
-import 'package:hidaya/controllers/sheiks_controller.dart';
+import 'package:hidaya/controllers/sheikhs_controller.dart';
 import 'package:hidaya/controllers/category_controller.dart';
 import 'package:hidaya/models/schedule_group_model.dart';
 import 'package:hidaya/models/schedule_model.dart';
@@ -62,7 +62,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
 
     try {
       final hasConflict = await ref
-          .read(scheduleGroupsControllerProvider('admin').notifier)
+          .read(scheduleGroupsControllerProvider.notifier)
           .hasScheduleConflict(_selectedDays.toList(), _timeSlots);
 
       if (hasConflict) {
@@ -91,7 +91,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
       );
 
       await ref
-          .read(scheduleGroupsControllerProvider('admin').notifier)
+          .read(scheduleGroupsControllerProvider.notifier)
           .addScheduleGroup(group);
 
       if (mounted) {
@@ -183,7 +183,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
             // Sheikh Selection
             Consumer(
               builder: (context, ref, child) {
-                final sheikhsAsync = ref.watch(sheiksControllerProvider);
+                final sheikhsAsync = ref.watch(sheikhsControllerProvider);
 
                 return sheikhsAsync.when(
                   loading: () => const LoadingIndicator(),
@@ -191,7 +191,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                       app_error.AppErrorWidget(message: error.toString()),
                   data: (sheikhs) {
                     return DropdownButtonFormField<String>(
-                      value: _selectedSheikhId,
+                      initialValue: _selectedSheikhId,
                       decoration: const InputDecoration(
                         labelText: 'اختر الشيخ',
                         border: OutlineInputBorder(),
@@ -231,7 +231,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                       app_error.AppErrorWidget(message: error.toString()),
                   data: (categories) {
                     return DropdownButtonFormField<String>(
-                      value: _selectedCategoryId,
+                      initialValue: _selectedCategoryId,
                       decoration: const InputDecoration(
                         labelText: 'اختر التصنيف',
                         border: OutlineInputBorder(),
@@ -469,7 +469,7 @@ class _TimeSlotDialogState extends State<_TimeSlotDialog> {
                     app_error.AppErrorWidget(message: error.toString()),
                 data: (categories) {
                   return DropdownButtonFormField<String>(
-                    value: _selectedCategoryId,
+                    initialValue: _selectedCategoryId,
                     decoration: const InputDecoration(
                       labelText: 'اختر التصنيف',
                       border: OutlineInputBorder(),

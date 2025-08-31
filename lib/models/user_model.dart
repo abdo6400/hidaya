@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Roles your app supports
@@ -10,6 +12,7 @@ UserRole _roleFromString(String s) =>
 class AppUser {
   final String id;
   final String username; // unique, lowercase
+  final String name;
   final UserRole role;
   final String? email;
   final String? phone;
@@ -21,6 +24,7 @@ class AppUser {
     required this.id,
     required this.username,
     required this.role,
+    required this.name,
 
     this.email,
     this.phone,
@@ -33,6 +37,7 @@ class AppUser {
     final d = doc.data()!;
     return AppUser(
       id: doc.id,
+      name: d['name'] as String,
       username: (d['username'] as String?)?.toLowerCase().trim() ?? '',
       role: _roleFromString(d['role'] as String),
       email: d['email'] as String?,
@@ -43,19 +48,58 @@ class AppUser {
     );
   }
 
-  Map<String, dynamic> toMap({required String passwordHash}) => {
-        'username': username,
-        'password': passwordHash,
-        'role': role.name,   
-        'email': email,
-        'phone': phone,
-        'status': status,
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastLogin': FieldValue.serverTimestamp(),
-      };
+  Map<String, dynamic> toMap({String? passwordHash}) {
+    return {
+      'id': id,
+      'username': username,
+      if (passwordHash != null) 'password': passwordHash,
+      'role': role.name,
+      'email': email,
+      'phone': phone,
+      'status': status,
+      'createdAt': createdAt,
+      'lastLogin': lastLogin,
+    };
+  }
+
+  /// Convert to map for JSON serialization (SharedPreferences)
+  Map<String, dynamic> toJsonMap() {
+    return {
+      'id': id,
+      'username': username,
+      'role': role.name,
+      'email': email,
+      'phone': phone,
+      'status': status,
+      'createdAt': createdAt?.toIso8601String(),
+      'lastLogin': lastLogin?.toIso8601String(),
+    };
+  }
+
+  Map<String, dynamic> toJson() => toMap();
+
+  factory AppUser.fromJson(String jsonString) {
+    try {
+      final data = jsonDecode(jsonString) as Map<String, dynamic>;
+      return AppUser(
+        id: data['id'] as String,
+        name: data['name'] as String,
+        username: data['username'] as String,
+        role: _roleFromString(data['role'] as String),
+        email: data['email'] as String?,
+        phone: data['phone'] as String?,
+        status: data['status'] as String? ?? 'active',
+        createdAt: data['createdAt'] != null ? DateTime.parse(data['createdAt'] as String) : null,
+        lastLogin: data['lastLogin'] != null ? DateTime.parse(data['lastLogin'] as String) : null,
+      );
+    } catch (e) {
+      throw FormatException('Failed to parse AppUser from JSON: $e');
+    }
+  }
 
   copyWith({
     String? id,
+    String? name,
     String? username,
     UserRole? role,
     String? email,
@@ -66,6 +110,7 @@ class AppUser {
   }) {
     return AppUser(
       id: id ?? this.id,
+      name: name ?? this.name,
       username: username ?? this.username,
       role: role ?? this.role,
       email: email ?? this.email,

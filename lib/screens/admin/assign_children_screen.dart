@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hidaya/controllers/children_controller.dart';
-import 'package:hidaya/controllers/group_children_controller.dart';
 import 'package:hidaya/models/child_model.dart';
 import 'package:hidaya/models/schedule_group_model.dart';
-import 'package:hidaya/widgets/error_widget.dart' as app_error;
-import 'package:hidaya/widgets/loading_indicator.dart';
-import 'package:hidaya/widgets/primary_button.dart';
+import 'package:hidaya/controllers/group_children_controller.dart';
+import 'package:hidaya/widgets/admin/app_scaffold.dart';
+import 'package:hidaya/widgets/admin/list_item_card.dart';
+import 'package:hidaya/widgets/admin/search_bar.dart' as custom;
 
 class AssignChildrenScreen extends ConsumerStatefulWidget {
   final ScheduleGroupModel group;
@@ -88,28 +87,33 @@ class _AssignChildrenScreenState extends ConsumerState<AssignChildrenScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('تعيين أطفال - ${widget.group.name}'),
-        centerTitle: true,
-      ),
+    final refreshAction = IconButton(
+      icon: const Icon(Icons.refresh),
+      onPressed: () {
+        ref.read(allChildrenControllerProvider.notifier).loadChildren();
+        ref.read(groupChildrenControllerProvider.notifier).loadItems();
+      },
+    );
+
+    return AppScaffold(
+      title: 'تعيين أطفال - ${widget.group.name} (${widget.group.id})',
+      actions: [refreshAction],
       body: Column(
         children: [
           // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'البحث عن طفل...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-              ),
-            ),
+          custom.SearchBar(
+            controller: _searchController,
+            hintText: 'البحث عن طفل...',
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.toLowerCase();
+              });
+            },
+            onClear: () {
+              setState(() {
+                _searchQuery = '';
+              });
+            },
           ),
 
           // Selected Count
@@ -146,23 +150,49 @@ class _AssignChildrenScreenState extends ConsumerState<AssignChildrenScreen> {
           Expanded(
             child: Consumer(
               builder: (context, ref, child) {
-                final childrenAsync = ref.watch(childrenControllerProvider(''));
+                final childrenAsync = ref.watch(allChildrenControllerProvider);
+
+                // Get the list of children already in this group
+                final groupChildrenAsync = ref.watch(
+                  groupChildrenControllerProvider.select(
+                    (value) => value.maybeWhen(
+                      data: (groupChildren) => groupChildren,
+                      orElse: () => <ChildModel>[],
+                    ),
+                  ),
+                );
+
+                // Load children for the group when the screen is first built
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ref.read(groupChildrenControllerProvider.notifier).loadItems();
+                });
 
                 return childrenAsync.when(
                   loading: () => const LoadingIndicator(),
-                  error: (error, stack) =>
-                      app_error.AppErrorWidget(message: error.toString()),
+error: (error, stack) =>
+                      ErrorMessage(
+                        message: 'حدث خطأ: $error',
+                        onRetry: () {
+                          ref.read(allChildrenControllerProvider.notifier).loadChildren();
+                          ref.read(groupChildrenControllerProvider.notifier).loadItems();
+                        },
+                      ),
                   data: (children) {
-                    // Filter children based on search query
+                    // Get the list of child IDs already in this group
+                    final groupChildIds = groupChildrenAsync.map((child) => child.id).toSet();
+                    
+                    // Filter children based on search query and group membership
                     final filteredChildren = children.where((child) {
-                      final matchesSearch = child.name.toLowerCase().contains(
-                        _searchQuery,
-                      );
-
-                      // Don't show children already in this group
-                      // We'll check this later when we have the group assignments
-                      return matchesSearch;
-                    }).toList();
+                      final searchLower = _searchQuery.toLowerCase();
+                      final matchesSearch = child.name.toLowerCase().contains(searchLower) ||
+                          child.id.toLowerCase().contains(searchLower);
+                      
+                      // Check if child is already in this group
+                      final isInGroup = groupChildIds.contains(child.id);
+                      
+                      return matchesSearch && !isInGroup;
+                    }).toList()
+                    ..sort((a, b) => a.name.compareTo(b.name));
 
                     if (filteredChildren.isEmpty) {
                       return Center(
@@ -178,12 +208,16 @@ class _AssignChildrenScreenState extends ConsumerState<AssignChildrenScreen> {
                             Text(
                               _searchQuery.isEmpty
                                   ? 'لا يوجد أطفال متاحين للتعيين'
-                                  : 'لا توجد نتائج للبحث',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
+                                  : 'لا توجد نتائج',
+                              style: Theme.of(context).textTheme.titleMedium,
                             ),
+                            if (_searchQuery.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'جرب استخدام كلمات بحث مختلفة',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
                           ],
                         ),
                       );
@@ -195,48 +229,30 @@ class _AssignChildrenScreenState extends ConsumerState<AssignChildrenScreen> {
                         final child = filteredChildren[index];
                         final isSelected = _selectedChildIds.contains(child.id);
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
-                          ),
-                          child: CheckboxListTile(
-                            value: isSelected,
-                            onChanged: (bool? value) {
-                              setState(() {
-                                if (value == true) {
-                                  _selectedChildIds.add(child.id);
-                                } else {
-                                  _selectedChildIds.remove(child.id);
-                                }
-                              });
-                            },
-                            title: Text(
-                              child.name,
-                              style: const TextStyle(
+                        return ListItemCard(
+                          title: child.name,
+                          subtitle: 'العمر: ${child.age} سنوات',
+                          trailingText: 'ID: ${child.id}',
+                          selected: isSelected,
+                          leading: CircleAvatar(
+                            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                            child: Text(
+                              child.name.substring(0, 1),
+                              style: TextStyle(
+                                color: Theme.of(context).primaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('العمر: ${child.age} سنوات'),
-                                Text('الأب: ${child.parentId}'),
-                                // TODO: Show current groups count when we have the data
-                              ],
-                            ),
-                            secondary: CircleAvatar(
-                              backgroundColor: Colors.blue[100],
-                              child: Text(
-                                child.name.substring(0, 1),
-                                style: TextStyle(
-                                  color: Colors.blue[700],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            controlAffinity: ListTileControlAffinity.leading,
                           ),
+                          onTap: () {
+                            setState(() {
+                              if (isSelected) {
+                                _selectedChildIds.remove(child.id);
+                              } else {
+                                _selectedChildIds.add(child.id);
+                              }
+                            });
+                          },
                         );
                       },
                     );
@@ -250,7 +266,7 @@ class _AssignChildrenScreenState extends ConsumerState<AssignChildrenScreen> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).scaffoldBackgroundColor,
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.2),
@@ -263,12 +279,24 @@ class _AssignChildrenScreenState extends ConsumerState<AssignChildrenScreen> {
         child: Row(
           children: [
             Expanded(
-              child: PrimaryButton(
-                text: 'تعيين المحددين (${_selectedChildIds.length})',
-                onPressed: _selectedChildIds.isNotEmpty
-                    ? _assignSelectedChildren
-                    : null,
-                isLoading: _isLoading,
+              child: ElevatedButton(
+                onPressed: _selectedChildIds.isNotEmpty ? _assignSelectedChildren : null,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey[300],
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Text('تعيين المحددين (${_selectedChildIds.length})'),
               ),
             ),
             const SizedBox(width: 12),

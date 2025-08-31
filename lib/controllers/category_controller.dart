@@ -1,53 +1,45 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/category_model.dart';
-import '../services/database_service.dart';
+import '../services/firebase_service.dart';
+import 'base_controller.dart';
 
 final categoryControllerProvider =
     StateNotifierProvider<CategoryController, AsyncValue<List<CategoryModel>>>(
-      (ref) => CategoryController(DatabaseService()),
+      (ref) => CategoryController(FirebaseService()),
     );
 
-class CategoryController extends StateNotifier<AsyncValue<List<CategoryModel>>> {
-  final DatabaseService _dbService;
+class CategoryController extends BaseController<CategoryModel> {
+  final FirebaseService _firebaseService;
 
-  CategoryController(this._dbService) : super(const AsyncValue.loading()) {
-    loadCategories();
+  CategoryController(this._firebaseService) {
+    loadItems();
   }
 
-  /// Load all categories
-  Future<void> loadCategories() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _dbService.getCategories());
+  @override
+  Future<void> loadItems() async {
+    setLoading();
+    state = await AsyncValue.guard(() => _firebaseService.getAllCategories());
   }
 
-  /// Add a new category, then reload list
-  Future<void> addCategory(CategoryModel category) async {
-    try {
-      await _dbService.addCategory(category);
-      await loadCategories();
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
+  @override
+  Future<void> addItem(CategoryModel item) async {
+    await handleOperation(() => _firebaseService.addCategory(item));
   }
 
-  /// Update a category, then reload list
-  Future<void> updateCategory(CategoryModel category) async {
-    try {
-      await _dbService.updateCategory(category);
-      await loadCategories();
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
+  @override
+  Future<void> updateItem(CategoryModel item) async {
+    await handleOperation(() => _firebaseService.updateCategory(item));
   }
 
-  /// Delete a category, then reload list
-  Future<void> deleteCategory(String categoryId) async {
-    try {
-      await _dbService.deleteCategory(categoryId);
-      await loadCategories();
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
+  @override
+  Future<void> deleteItem(String itemId) async {
+    await handleOperation(() => _firebaseService.deleteCategory(itemId));
   }
+
+  // Legacy method names for backward compatibility
+  Future<void> loadCategories() => loadItems();
+  Future<void> addCategory(CategoryModel category) => addItem(category);
+  Future<void> updateCategory(CategoryModel category) => updateItem(category);
+  Future<void> deleteCategory(String categoryId) => deleteItem(categoryId);
 }

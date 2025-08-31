@@ -1,129 +1,81 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/schedule_group_model.dart';
 import '../models/schedule_model.dart';
-import '../services/schedule_groups_service.dart';
-
-final scheduleGroupsServiceProvider = Provider(
-  (ref) => ScheduleGroupsService(),
-);
+import '../services/firebase_service.dart';
+import 'base_controller.dart';
 
 final scheduleGroupsControllerProvider =
-    StateNotifierProvider.family<
-      ScheduleGroupsController,
-      AsyncValue<List<ScheduleGroupModel>>,
-      String
-    >(
-      (ref, sheikhId) => ScheduleGroupsController(
-        ref.read(scheduleGroupsServiceProvider),
-        sheikhId,
-      ),
-    );
+    StateNotifierProvider<ScheduleGroupsController, AsyncValue<List<ScheduleGroupModel>>>(
+  (ref) => ScheduleGroupsController(FirebaseService()),
+);
 
-final scheduleGroupsWithCountControllerProvider =
-    StateNotifierProvider.family<
-      ScheduleGroupsWithCountController,
-      AsyncValue<List<Map<String, dynamic>>>,
-      String
-    >(
-      (ref, sheikhId) => ScheduleGroupsWithCountController(
-        ref.read(scheduleGroupsServiceProvider),
-        sheikhId,
-      ),
-    );
+class ScheduleGroupsController extends BaseController<ScheduleGroupModel> {
+  final FirebaseService _firebaseService;
 
-class ScheduleGroupsController
-    extends StateNotifier<AsyncValue<List<ScheduleGroupModel>>> {
-  final ScheduleGroupsService _service;
-  final String _sheikhId;
-
-  ScheduleGroupsController(this._service, this._sheikhId)
-    : super(const AsyncValue.loading()) {
-    loadScheduleGroups();
+  ScheduleGroupsController(this._firebaseService) {
+    loadItems();
   }
 
-  Future<void> loadScheduleGroups() async {
-    state = const AsyncValue.loading();
-    try {
-      List<ScheduleGroupModel> groups;
-      if (_sheikhId == 'all') {
-        groups = await _service.getAllScheduleGroups();
-      } else {
-        groups = await _service.getScheduleGroupsBySheikh(_sheikhId);
+  @override
+  Future<void> loadItems() async {
+    setLoading();
+    state = await AsyncValue.guard(() => _firebaseService.getAllScheduleGroups());
+  }
+
+  @override
+  Future<void> addItem(ScheduleGroupModel item) async {
+    await handleOperation(() => _firebaseService.addScheduleGroup(item));
+  }
+
+  @override
+  Future<void> updateItem(ScheduleGroupModel item) async {
+    await handleOperation(() => _firebaseService.updateScheduleGroup(item));
+  }
+
+  @override
+  Future<void> deleteItem(String itemId) async {
+    await handleOperation(() => _firebaseService.deleteScheduleGroup(itemId));
+  }
+
+  // Additional methods for schedule group management
+  Future<List<ScheduleGroupModel>> getScheduleGroupsBySheikh(String sheikhId) async {
+    return await _firebaseService.getScheduleGroupsBySheikh(sheikhId);
+  }
+
+  Future<ScheduleGroupModel?> getScheduleGroupById(String groupId) async {
+    return await _firebaseService.getScheduleGroupById(groupId);
+  }
+
+  // Legacy method names for backward compatibility
+  Future<void> loadScheduleGroups() => loadItems();
+  Future<void> addScheduleGroup(ScheduleGroupModel group) => addItem(group);
+  Future<void> updateScheduleGroup(ScheduleGroupModel group) => updateItem(group);
+  Future<void> deleteScheduleGroup(String groupId) => deleteItem(groupId);
+
+  // Check for schedule conflicts
+  Future<bool> hasScheduleConflict(List<WeekDay> days, List<TimeSlot> timeSlots) async {
+    // This is a simplified conflict check - you can implement more sophisticated logic
+    final existingGroups = await _firebaseService.getAllScheduleGroups();
+    
+    for (final group in existingGroups) {
+      for (final day in group.days) {
+        if (days.contains(day.day)) {
+          // Check if time slots overlap
+          for (final existingSlot in day.timeSlots) {
+            for (final newSlot in timeSlots) {
+              if (_doTimeSlotsOverlap(existingSlot, newSlot)) {
+                return true; // Conflict found
+              }
+            }
+          }
+        }
       }
-      state = AsyncValue.data(groups);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
     }
+    return false; // No conflicts
   }
 
-  Future<void> addScheduleGroup(ScheduleGroupModel group) async {
-    try {
-      await _service.addScheduleGroup(group);
-      await loadScheduleGroups();
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<void> updateScheduleGroup(String id, ScheduleGroupModel group) async {
-    try {
-      await _service.updateScheduleGroup(id, group);
-      await loadScheduleGroups();
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<void> deleteScheduleGroup(String id) async {
-    try {
-      await _service.deleteScheduleGroup(id);
-      await loadScheduleGroups();
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<bool> hasScheduleConflict(
-    List<WeekDay> days,
-    List<TimeSlot> timeSlots, {
-    String? excludeGroupId,
-  }) async {
-    try {
-      return await _service.hasScheduleConflict(
-        _sheikhId,
-        days,
-        timeSlots,
-        excludeGroupId: excludeGroupId,
-      );
-    } catch (error) {
-      return false;
-    }
-  }
-}
-
-class ScheduleGroupsWithCountController
-    extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
-  final ScheduleGroupsService _service;
-  final String _sheikhId;
-
-  ScheduleGroupsWithCountController(this._service, this._sheikhId)
-    : super(const AsyncValue.loading()) {
-    loadScheduleGroupsWithCount();
-  }
-
-  Future<void> loadScheduleGroupsWithCount() async {
-    state = const AsyncValue.loading();
-    try {
-      final groupsWithCount = await _service.getGroupsWithChildrenCount(
-        _sheikhId,
-      );
-      state = AsyncValue.data(groupsWithCount);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-
-  Future<void> refresh() async {
-    await loadScheduleGroupsWithCount();
+  bool _doTimeSlotsOverlap(TimeSlot slot1, TimeSlot slot2) {
+    // Simple time overlap check - you can implement more sophisticated logic
+    return slot1.startTime == slot2.startTime || slot1.endTime == slot2.endTime;
   }
 }

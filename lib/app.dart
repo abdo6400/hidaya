@@ -4,10 +4,11 @@ import 'package:hidaya/controllers/auth_controller.dart';
 import 'package:hidaya/models/user_model.dart';
 import 'package:hidaya/screens/admin/admin_screen.dart';
 import 'package:hidaya/screens/auth/auth_screen.dart';
-import 'package:hidaya/screens/parent/parent_screen.dart';
 import 'package:hidaya/screens/sheikh/sheikh_screen.dart';
 import 'package:hidaya/utils/app_theme.dart';
 import 'package:hidaya/utils/constants.dart';
+
+import 'screens/parent/parent_dashboard_screen.dart';
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
@@ -27,7 +28,7 @@ class MyApp extends ConsumerWidget {
   Widget _getHomeScreen(AppUser user, WidgetRef ref) {
     switch (user.role) {
       case UserRole.parent:
-        return const ParentScreen();
+        return const ParentDashboardScreen();
       case UserRole.sheikh:
         return const SheikhScreen();
       case UserRole.admin:

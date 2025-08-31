@@ -1,6 +1,8 @@
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/user_model.dart';
+import '../utils/firestore_constants.dart';
 
 class AuthException implements Exception {
   final String code;
@@ -16,9 +18,11 @@ class AuthService {
 
   final FirebaseFirestore _db;
 
-  CollectionReference<Map<String, dynamic>> get _users => _db.collection('users');
+  CollectionReference<Map<String, dynamic>> get _users => 
+      _db.collection(FirestoreCollections.users);
+      
   DocumentReference<Map<String, dynamic>> _usernameIndexRef(String uname) =>
-      _db.collection('usernameIndex').doc(uname);
+      _db.collection(FirestoreCollections.usernameIndex).doc(uname);
 
   /// Normalizes username: trim + lowercase
   String _normalize(String username) => username.trim().toLowerCase();
@@ -31,11 +35,24 @@ class AuthService {
     }
   }
 
+  /// Hash password using SHA-256
+  String _hashPassword(String password) {
+    final bytes = utf8.encode(password);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  /// Verify password against hash
+  bool _verifyPassword(String password, String hash) {
+    return _hashPassword(password) == hash;
+  }
+
   /// Registers a new user, enforcing unique username using a Firestore transaction.
   Future<AppUser> register({
     required String username,
     required String password,
     required UserRole role,
+    required String name,
     String? email,
     String? phone,
     String? status = 'blocked',
@@ -56,13 +73,14 @@ class AuthService {
       }
 
       tx.set(userRef, {
-        'username': uname,
-        'password': password,
-        'role': role.name,
-        'email': email,
-        'phone': phone,
-        'status': status,
-        'createdAt': FieldValue.serverTimestamp(),
+        FirestoreFields.username: uname,
+        FirestoreFields.password: _hashPassword(password),
+        FirestoreFields.role: role.name,
+        FirestoreFields.name: name,
+        FirestoreFields.email: email,
+        FirestoreFields.phone: phone,
+        FirestoreFields.status: status,
+        FirestoreFields.createdAt: FieldValue.serverTimestamp(),
         'lastLogin': FieldValue.serverTimestamp(),
       });
 
@@ -101,7 +119,7 @@ class AuthService {
     }
 
     final storedHash = data['password'] as String?;
-    if (storedHash == null || password != storedHash) {
+    if (storedHash == null || !_verifyPassword(password, storedHash)) {
       throw AuthException('wrong_password', 'Incorrect password.');
     }
 
@@ -127,11 +145,11 @@ class AuthService {
 
     final data = snap.data()!;
     final hash = data['password'] as String?;
-    if (hash == null || hash != oldPassword) {
+    if (hash == null || !_verifyPassword(oldPassword, hash)) {
       throw AuthException('wrong_password', 'Old password is incorrect.');
     }
 
-    await ref.update({'password': newPassword});
+    await ref.update({'password': _hashPassword(newPassword)});
   }
 
   /// Rename username (keeps uniqueness via transaction).
@@ -176,8 +194,6 @@ class AuthService {
       tx.delete(idxRef);
     });
   }
-
- 
 
   Future<void> logout() async {}
 }

@@ -34,7 +34,7 @@ class AssignmentModel {
       'childId': childId,
       'categoryId': categoryId,
       'sheikhId': sheikhId,
-      'assignedAt': assignedAt,
+      'assignedAt': Timestamp.fromDate(assignedAt),
       'isActive': isActive,
     };
   }

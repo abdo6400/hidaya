@@ -36,9 +36,7 @@ class ChildModel {
       createdBy: data['createdBy'] ?? '',
       categoryId: data['categoryId'],
       sheikhId: data['sheikhId'],
-      assignedAt: data['assignedAt'] != null
-          ? DateTime.parse(data['assignedAt'])
-          : null,
+      assignedAt: (data['assignedAt'] as Timestamp?)?.toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
   }
@@ -50,7 +48,10 @@ class ChildModel {
       "parentId": parentId,
       "isApproved": isApproved,
       "createdBy": createdBy,
-      "createdAt": createdAt,
+      "createdAt": createdAt != null ? Timestamp.fromDate(createdAt!) : null,
+      "categoryId": categoryId,
+      "sheikhId": sheikhId,
+      "assignedAt": assignedAt != null ? Timestamp.fromDate(assignedAt!) : null,
     };
   }
 }

@@ -1,497 +1,486 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/controllers/schedule_groups_controller.dart';
-import 'package:hidaya/controllers/category_controller.dart';
-import 'package:hidaya/controllers/reports_controller.dart';
 import 'package:hidaya/models/schedule_group_model.dart';
-import 'package:hidaya/models/category_model.dart';
 import 'package:hidaya/widgets/error_widget.dart' as app_error;
 import 'package:hidaya/widgets/loading_indicator.dart';
+import 'package:hidaya/widgets/dashboard_stats_card.dart';
+import 'package:hidaya/widgets/quick_action_button.dart';
+import 'package:hidaya/utils/app_theme.dart';
+import '../../providers/firebase_providers.dart';
 import 'create_group_screen.dart';
 import 'edit_group_screen.dart';
 import 'group_detail_screen.dart';
-import 'reports_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
-  ConsumerState<AdminDashboardScreen> createState() =>
-      _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
-  int _currentIndex = 0;
-
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        body: Column(
-          children: [
-            // Tab Bar
-            TabBar(
-              onTap: (index) => setState(() => _currentIndex = index),
-              tabs: const [
-                Tab(text: 'المجموعات'),
-                Tab(text: 'التقارير'),
-              ],
-            ),
-
-            // Tab Content
-            Expanded(
-              child: IndexedStack(
-                index: _currentIndex,
-                children: const [_GroupsTab(), ReportsScreen()],
-              ),
-            ),
-          ],
-        ),
-        floatingActionButton: _currentIndex == 0
-            ? FloatingActionButton(
-                onPressed: () => _createNewGroup(),
-                child: const Icon(Icons.add),
-              )
-            : null,
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      body: CustomScrollView(
+        slivers: [
+          // Welcome Header
+          SliverToBoxAdapter(
+            child: _buildWelcomeHeader(),
+          ),
+          
+          // Stats Cards
+          SliverToBoxAdapter(
+            child: _buildStatsSection(),
+          ),
+          
+          // Quick Actions
+          SliverToBoxAdapter(
+            child: _buildQuickActionsSection(),
+          ),
+          
+          // Recent Groups
+          SliverToBoxAdapter(
+            child: _buildRecentGroupsSection(),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _createNewGroup(),
+        icon: const Icon(Icons.add),
+        label: const Text('إنشاء مجموعة'),
+        backgroundColor: AppTheme.secondaryColor,
+        foregroundColor: Colors.white,
       ),
     );
   }
 
-  void _createNewGroup() async {
-    final result = await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const CreateGroupScreen()));
-
-    if (result == true) {
-      // Refresh the groups list
-      ref.invalidate(scheduleGroupsControllerProvider('all'));
-    }
+  Widget _buildWelcomeHeader() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: AppTheme.primaryGradient,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.admin_panel_settings,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'مرحباً بك في لوحة الإدارة',
+                      style: AppTheme.islamicTitleStyle.copyWith(
+                        color: Colors.white,
+                        fontSize: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'إدارة التعليم الإسلامي بكل سهولة',
+                      style: AppTheme.arabicTextStyle.copyWith(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
-}
 
-class _GroupsTab extends ConsumerWidget {
-  const _GroupsTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final groupsAsync = ref.watch(scheduleGroupsControllerProvider('all'));
-
-    return groupsAsync.when(
-      loading: () => const LoadingIndicator(),
-      error: (error, stack) =>
-          app_error.AppErrorWidget(message: error.toString()),
-      data: (groups) {
-        if (groups.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.group_outlined, size: 64, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text(
-                  'لا توجد مجموعات',
-                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'اضغط على + لإنشاء مجموعة جديدة',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                ),
-              ],
+  Widget _buildStatsSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'إحصائيات سريعة',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: AppTheme.primaryColor,
+              fontWeight: FontWeight.bold,
             ),
-          );
-        }
+          ),
+          const SizedBox(height: 16),
+          Consumer(
+            builder: (context, ref, child) {
+              final statsAsync = ref.watch(dashboardStatsProvider);
+              
+              return statsAsync.when(
+                data: (stats) => DashboardStatsGrid(
+                  cards: [
+                    DashboardStatsCard(
+                      title: 'إجمالي المستخدمين',
+                      value: '${stats['totalUsers'] ?? 0}',
+                      icon: Icons.people,
+                      color: AppTheme.primaryColor,
+                      onTap: () {},
+                    ),
+                    DashboardStatsCard(
+                      title: 'المحفظين النشطين',
+                      value: '${stats['activeUsers'] ?? 0}',
+                      icon: Icons.person,
+                      color: AppTheme.successColor,
+                      onTap: () {},
+                    ),
+                    DashboardStatsCard(
+                      title: 'الطلاب المسجلين',
+                      value: '${stats['totalChildren'] ?? 0}',
+                      icon: Icons.school,
+                      color: AppTheme.infoColor,
+                      onTap: () {},
+                    ),
+                    DashboardStatsCard(
+                      title: 'الفئات التعليمية',
+                      value: '${stats['totalCategories'] ?? 0}',
+                      icon: Icons.category,
+                      color: AppTheme.warningColor,
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+                loading: () => const LoadingIndicator(),
+                error: (error, stack) => app_error.AsyncErrorWidget(
+                  error: error,
+                  stackTrace: stack,
+                  onRetry: () => ref.refresh(dashboardStatsProvider),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
-        return RefreshIndicator(
-          onRefresh: () => ref
-              .read(scheduleGroupsControllerProvider('all').notifier)
-              .loadScheduleGroups(),
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: groups.length,
-            itemBuilder: (context, index) {
-              final group = groups[index];
-              return _GroupCardWithChildrenCount(
-                group: group,
-                onGroupUpdated: () {
-                  // Refresh the groups list
-                  ref.invalidate(scheduleGroupsControllerProvider('all'));
+  Widget _buildQuickActionsSection() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'إجراءات سريعة',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: AppTheme.primaryColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          QuickActionsGrid(
+            actions: [
+              QuickActionButton(
+                title: 'إضافة محفظ',
+                icon: Icons.person_add,
+                onTap: () => _navigateToSheikhs(),
+                color: AppTheme.primaryColor,
+              ),
+              QuickActionButton(
+                title: 'إنشاء فئة',
+                icon: Icons.category,
+                onTap: () => _navigateToCategories(),
+                color: AppTheme.successColor,
+              ),
+              QuickActionButton(
+                title: 'إضافة مهمة',
+                icon: Icons.task,
+                onTap: () => _navigateToTasks(),
+                color: AppTheme.warningColor,
+              ),
+              QuickActionButton(
+                title: 'جدول المواعيد',
+                icon: Icons.schedule,
+                onTap: () => _navigateToSchedules(),
+                color: AppTheme.infoColor,
+              ),
+              QuickActionButton(
+                title: 'التقارير',
+                icon: Icons.analytics,
+                onTap: () => _navigateToReports(),
+                color: AppTheme.accentColor,
+              ),
+              QuickActionButton(
+                title: 'الإشعارات',
+                icon: Icons.notifications,
+                onTap: () => _navigateToNotifications(),
+                color: AppTheme.secondaryColor,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentGroupsSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'المجموعات الحديثة',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: AppTheme.primaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () => _navigateToAllGroups(),
+                child: Text(
+                  'عرض الكل',
+                  style: TextStyle(
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Consumer(
+            builder: (context, ref, child) {
+              final groupsAsync = ref.watch(scheduleGroupsControllerProvider);
+              
+              return groupsAsync.when(
+                loading: () => const LoadingIndicator(),
+                error: (error, stack) => app_error.AppErrorWidget(message: error.toString()),
+                data: (groups) {
+                  if (groups.isEmpty) {
+                    return _buildEmptyState();
+                  }
+                  
+                  // Show only recent 3 groups
+                  final recentGroups = groups.take(3).toList();
+                  
+                  return Column(
+                    children: recentGroups.map((group) => _buildGroupCard(group)).toList(),
+                  );
                 },
               );
             },
           ),
-        );
-      },
-    );
-  }
-}
-
-class _GroupCardWithChildrenCount extends ConsumerWidget {
-  final ScheduleGroupModel group;
-  final VoidCallback? onGroupUpdated;
-
-  const _GroupCardWithChildrenCount({required this.group, this.onGroupUpdated});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Get children count for this group
-    final childrenCountAsync = ref.watch(
-      FutureProvider.family<int, String>((ref, groupId) async {
-        final service = ref.read(scheduleGroupsServiceProvider);
-        return await service.getChildrenCountForGroup(groupId);
-      })(group.id),
-    );
-
-    return childrenCountAsync.when(
-      loading: () => _GroupCard(
-        group: group,
-        childrenCount: 0,
-        onGroupUpdated: onGroupUpdated,
-      ),
-      error: (_, __) => _GroupCard(
-        group: group,
-        childrenCount: 0,
-        onGroupUpdated: onGroupUpdated,
-      ),
-      data: (childrenCount) => _GroupCard(
-        group: group,
-        childrenCount: childrenCount,
-        onGroupUpdated: onGroupUpdated,
+        ],
       ),
     );
   }
-}
 
-class _GroupCard extends ConsumerStatefulWidget {
-  final ScheduleGroupModel group;
-  final int childrenCount;
-  final VoidCallback? onGroupUpdated;
-
-  const _GroupCard({
-    required this.group,
-    required this.childrenCount,
-    this.onGroupUpdated,
-  });
-
-  @override
-  ConsumerState<_GroupCard> createState() => _GroupCardState();
-}
-
-class _GroupCardState extends ConsumerState<_GroupCard> {
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: widget.group.isActive
-              ? Colors.green[100]
-              : Colors.grey[100],
-          child: Icon(
-            Icons.group,
-            color: widget.group.isActive ? Colors.green[700] : Colors.grey[600],
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.groups_outlined,
+            size: 64,
+            color: Colors.grey[400],
           ),
-        ),
-        title: Text(
-          widget.group.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.group.description.isNotEmpty)
-              Text(widget.group.description),
-            Text(
-              widget.group.daysDisplay,
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          const SizedBox(height: 16),
+          Text(
+            'لا توجد مجموعات',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Colors.grey[600],
             ),
-            Row(
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'اضغط على + لإنشاء مجموعة جديدة',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[500],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupCard(ScheduleGroupModel group) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 2,
+        child: InkWell(
+          onTap: () => _viewGroupDetails(group),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
-                    color: widget.group.isActive
-                        ? Colors.green[100]
-                        : Colors.grey[100],
+                    color: AppTheme.primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    widget.group.isActive ? 'نشط' : 'غير نشط',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: widget.group.isActive
-                          ? Colors.green[700]
-                          : Colors.grey[600],
-                    ),
+                  child: Icon(
+                    Icons.groups,
+                    color: AppTheme.primaryColor,
+                    size: 24,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '${widget.childrenCount} طفل',
-                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                ),
-                const SizedBox(width: 8),
-                Consumer(
-                  builder: (context, ref, child) {
-                    final categoriesAsync = ref.watch(
-                      categoryControllerProvider,
-                    );
-                    return categoriesAsync.when(
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                      data: (categories) {
-                        final category = categories.firstWhere(
-                          (cat) => cat.id == widget.group.categoryId,
-                          orElse: () => CategoryModel(
-                            id: '',
-                            name: 'غير محدد',
-                            description: '',
-                          ),
-                        );
-                        return Text(
-                          'الفئة: ${category.name}',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[600],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-                Consumer(
-                  builder: (context, ref, child) {
-                    final sheikhNameAsync = ref.watch(
-                      sheikhNameProvider(widget.group.sheikhId),
-                    );
-                    return sheikhNameAsync.when(
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => Text(
-                        'الشيخ: ${widget.group.sheikhId}',
-                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        group.name,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      data: (sheikhName) => Text(
-                        'الشيخ: $sheikhName',
-                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                      const SizedBox(height: 4),
+                      Text(
+                        group.description.isNotEmpty ? group.description : 'لا يوجد وصف',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    );
-                  },
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          _buildStatusChip(
+                            group.isActive ? 'نشط' : 'غير نشط',
+                            group.isActive ? AppTheme.successColor : Colors.grey,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildStatusChip(
+                            group.daysDisplay,
+                            AppTheme.infoColor,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.grey[400],
+                  size: 16,
                 ),
               ],
             ),
-          ],
+          ),
         ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) => _handleMenuAction(context, value),
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'view',
-              child: Row(
-                children: [
-                  Icon(Icons.visibility),
-                  SizedBox(width: 8),
-                  Text('عرض التفاصيل'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'edit',
-              child: Row(
-                children: [Icon(Icons.edit), SizedBox(width: 8), Text('تعديل')],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'assign',
-              child: Row(
-                children: [
-                  Icon(Icons.people),
-                  SizedBox(width: 8),
-                  Text('تعيين أطفال'),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              value: widget.group.isActive ? 'deactivate' : 'activate',
-              child: Row(
-                children: [
-                  Icon(
-                    widget.group.isActive ? Icons.pause : Icons.play_arrow,
-                    color: widget.group.isActive ? Colors.orange : Colors.green,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.group.isActive ? 'إيقاف' : 'تفعيل',
-                    style: TextStyle(
-                      color: widget.group.isActive
-                          ? Colors.orange
-                          : Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete, color: Colors.red),
-                  SizedBox(width: 8),
-                  Text('حذف', style: TextStyle(color: Colors.red)),
-                ],
-              ),
-            ),
-          ],
-        ),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => AdminGroupDetailScreen(group: widget.group),
-            ),
-          );
-        },
       ),
     );
   }
 
-  void _handleMenuAction(BuildContext context, String action) {
-    switch (action) {
-      case 'view':
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => AdminGroupDetailScreen(group: widget.group),
-          ),
-        );
-        break;
-      case 'edit':
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => EditGroupScreen(group: widget.group),
-          ),
-        );
-        break;
-      case 'assign':
-        // TODO: Navigate to assign children screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعيين أطفال - سيتم تنفيذها قريباً')),
-        );
-        break;
-      case 'activate':
-      case 'deactivate':
-        _toggleGroupStatus(context);
-        break;
-      case 'delete':
-        _showDeleteConfirmation(context);
-        break;
+  Widget _buildStatusChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  // Navigation methods
+  void _createNewGroup() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const CreateGroupScreen()),
+    );
+
+    if (result == true) {
+      ref.invalidate(scheduleGroupsControllerProvider);
     }
   }
 
-  void _toggleGroupStatus(BuildContext context) {
-    // Show confirmation dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          widget.group.isActive ? 'إيقاف المجموعة' : 'تفعيل المجموعة',
-        ),
-        content: Text(
-          widget.group.isActive
-              ? 'هل أنت متأكد من إيقاف مجموعة "${widget.group.name}"؟'
-              : 'هل أنت متأكد من تفعيل مجموعة "${widget.group.name}"؟',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _performToggleStatus(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: widget.group.isActive
-                  ? Colors.orange
-                  : Colors.green,
-            ),
-            child: Text(widget.group.isActive ? 'إيقاف' : 'تفعيل'),
-          ),
-        ],
-      ),
+  void _viewGroupDetails(ScheduleGroupModel group) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => AdminGroupDetailScreen(group: group)),
     );
   }
 
-  void _performToggleStatus(BuildContext context) async {
-    try {
-      final updatedGroup = widget.group.copyWith(
-        isActive: !widget.group.isActive,
-        updatedAt: DateTime.now(),
-      );
-
-      await ref
-          .read(scheduleGroupsControllerProvider('all').notifier)
-          .updateScheduleGroup(widget.group.id, updatedGroup);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.group.isActive ? 'تم إيقاف المجموعة' : 'تم تفعيل المجموعة',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-        widget.onGroupUpdated?.call();
-      }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في تحديث حالة المجموعة: $error'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+  void _navigateToSheikhs() {
+    // Navigate to sheikhs tab
+    // This would typically be handled by the parent admin screen
   }
 
-  void _showDeleteConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('حذف المجموعة'),
-        content: Text(
-          'هل أنت متأكد من حذف مجموعة "${widget.group.name}"؟\n\nهذا الإجراء لا يمكن التراجع عنه.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _performDelete(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('حذف'),
-          ),
-        ],
-      ),
-    );
+  void _navigateToCategories() {
+    // Navigate to categories tab
   }
 
-  void _performDelete(BuildContext context) {
-    // This will be handled by the parent widget to refresh the list
+  void _navigateToTasks() {
+    // Navigate to tasks tab
+  }
+
+  void _navigateToSchedules() {
+    // Navigate to schedules
+  }
+
+  void _navigateToReports() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('تم حذف المجموعة بنجاح'),
-        backgroundColor: Colors.green,
+        content: Text('🚧 شاشة التقارير - سيتم تنفيذها قريباً'),
+        backgroundColor: AppTheme.infoColor,
       ),
     );
+  }
+
+  void _navigateToNotifications() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('🚧 شاشة الإشعارات - سيتم تنفيذها قريباً'),
+        backgroundColor: AppTheme.infoColor,
+      ),
+    );
+  }
+
+  void _navigateToAllGroups() {
+    // Navigate to all groups view
   }
 }
