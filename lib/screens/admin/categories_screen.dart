@@ -7,6 +7,7 @@ import 'package:hidaya/models/category_model.dart';
 import 'package:hidaya/widgets/loading_indicator.dart';
 import 'package:hidaya/widgets/error_widget.dart' as app_error;
 import 'package:quickalert/quickalert.dart';
+import 'package:hidaya/providers/firebase_providers.dart';
 
 class CategoriesScreen extends ConsumerStatefulWidget {
   const CategoriesScreen({super.key});
@@ -63,7 +64,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'إدارة الفئات التعليمية',
+                              'إدارة الفئات',
                               style: AppTheme.islamicTitleStyle.copyWith(
                                 color: Colors.white,
                                 fontSize: 24,
@@ -89,46 +90,60 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
 
           // Stats
           SliverToBoxAdapter(
-            child: categoriesAsync.when(
-              data: (categories) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'إجمالي الفئات',
-                        '${categories.length}',
-                        Icons.category,
-                        AppTheme.primaryColor,
+            child: Consumer(
+              builder: (context, ref, child) {
+                final statsAsync = ref.watch(dashboardStatsProvider);
+                
+                return statsAsync.when(
+                  data: (stats) => categoriesAsync.when(
+                    data: (categories) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              'إجمالي الفئات',
+                              '${categories.length}',
+                              Icons.category,
+                              AppTheme.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              'الفئات النشطة',
+                              '${categories.length}',
+                              Icons.check_circle,
+                              AppTheme.successColor,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              'إجمالي الطلاب',
+                              '${stats['totalChildren'] ?? 0}',
+                              Icons.school,
+                              AppTheme.infoColor,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        'الفئات النشطة',
-                        '${categories.length}',
-                        Icons.check_circle,
-                        AppTheme.successColor,
-                      ),
+                    loading: () => const LoadingIndicator(),
+                    error: (error, stack) => app_error.AsyncErrorWidget(
+                      error: error,
+                      stackTrace: stack,
+                      onRetry: () => ref.refresh(categoryControllerProvider),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        'إجمالي الطلاب',
-                        '0',
-                        Icons.school,
-                        AppTheme.infoColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              loading: () => const LoadingIndicator(),
-              error: (error, stack) => app_error.AsyncErrorWidget(
-                error: error,
-                stackTrace: stack,
-                onRetry: () => ref.refresh(categoryControllerProvider),
-              ),
+                  ),
+                  loading: () => const LoadingIndicator(),
+                  error: (error, stack) => app_error.AsyncErrorWidget(
+                    error: error,
+                    stackTrace: stack,
+                    onRetry: () => ref.refresh(dashboardStatsProvider),
+                  ),
+                );
+              },
             ),
           ),
 
@@ -242,6 +257,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 4,
+        margin: const EdgeInsets.all(2),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -357,7 +373,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child:AlertDialog(
         title: const Text('إضافة فئة جديدة'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -396,12 +414,15 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                 
                 await ref.read(categoryControllerProvider.notifier).addItem(category);
                 Navigator.pop(context);
+                
+                // Refresh dashboard stats to update category count
+                ref.refresh(dashboardStatsProvider);
               }
             },
             child: const Text('إضافة'),
           ),
         ],
-      ),
+      ),)
     );
   }
 
@@ -411,7 +432,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child:AlertDialog(
         title: const Text('تعديل الفئة'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -450,12 +473,15 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                 
                 await ref.read(categoryControllerProvider.notifier).updateItem(updatedCategory);
                 Navigator.pop(context);
+                
+                // Refresh dashboard stats to update category count
+                ref.refresh(dashboardStatsProvider);
               }
             },
             child: const Text('حفظ'),
           ),
         ],
-      ),
+      ),)
     );
   }
 
@@ -470,6 +496,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       onConfirmBtnTap: () async {
         await ref.read(categoryControllerProvider.notifier).deleteItem(category.id);
         Navigator.pop(context);
+        
+        // Refresh dashboard stats to update category count
+        ref.refresh(dashboardStatsProvider);
       },
     );
   }

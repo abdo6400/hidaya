@@ -8,6 +8,7 @@ class TaskModel {
   final TaskType type;
   final String? categoryId;
   final int maxPoints;
+  final String? customOptions; // Added field for custom task options
 
   TaskModel({
     required this.id,
@@ -15,6 +16,7 @@ class TaskModel {
     required this.type,
     this.categoryId,
     required this.maxPoints,
+    this.customOptions, // Added parameter
   });
 
   factory TaskModel.fromFirestore(DocumentSnapshot doc) {
@@ -25,6 +27,7 @@ class TaskModel {
       type: _parseTaskType(data['type']),
       categoryId: data['categoryId'],
       maxPoints: data['maxPoints'] ?? 10,
+      customOptions: data['customOptions'], // Added field
     );
   }
 
@@ -51,6 +54,7 @@ class TaskModel {
       'type': _taskTypeToString(type),
       'categoryId': categoryId,
       'maxPoints': maxPoints,
+      'customOptions': customOptions, // Added field
     };
   }
 

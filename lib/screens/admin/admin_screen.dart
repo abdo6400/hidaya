@@ -49,6 +49,15 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
     super.dispose();
   }
 
+  // Method to change tabs from child widgets
+  void changeTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+    _animationController.reset();
+    _animationController.forward();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
@@ -288,7 +297,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
       child: IndexedStack(
         index: _currentIndex,
         children: [
-          const AdminDashboardScreen(),
+          AdminDashboardScreen(onTabChange: changeTab),
           SheikhsScreen(),
           CategoriesScreen(),
           TasksScreen(),

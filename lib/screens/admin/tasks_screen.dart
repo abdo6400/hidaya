@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hidaya/utils/constants.dart';
+
 import 'package:hidaya/utils/app_theme.dart';
 import 'package:hidaya/controllers/tasks_controller.dart';
+import 'package:hidaya/controllers/category_controller.dart';
 import 'package:hidaya/models/task_model.dart';
+import 'package:hidaya/models/category_model.dart';
 import 'package:hidaya/widgets/loading_indicator.dart';
 import 'package:hidaya/widgets/error_widget.dart' as app_error;
 import 'package:quickalert/quickalert.dart';
@@ -19,7 +21,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   @override
   Widget build(BuildContext context) {
     final tasksAsync = ref.watch(taskControllerProvider);
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: CustomScrollView(
@@ -144,10 +146,11 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     children: [
                       Text(
                         'قائمة المهام',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       ElevatedButton.icon(
                         onPressed: () => _showAddTaskDialog(),
@@ -160,13 +163,15 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Tasks List
                   tasksAsync.when(
                     data: (tasks) => tasks.isEmpty
                         ? _buildEmptyState()
                         : Column(
-                            children: tasks.map((task) => _buildTaskCard(task)).toList(),
+                            children: tasks
+                                .map((task) => _buildTaskCard(task))
+                                .toList(),
                           ),
                     loading: () => const LoadingIndicator(),
                     error: (error, stack) => app_error.AsyncErrorWidget(
@@ -184,7 +189,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -206,11 +216,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 12),
           Text(
@@ -242,6 +248,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
       child: Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 4,
+        margin: EdgeInsets.all(2),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -269,16 +276,14 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                       children: [
                         Text(
                           task.title,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'النوع: ${_getTaskTypeText(task.type)}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -297,16 +302,19 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                         value: 'delete',
                         child: ListTile(
                           leading: Icon(Icons.delete, color: Colors.red),
-                          title: Text('حذف', style: TextStyle(color: Colors.red)),
+                          title: Text(
+                            'حذف',
+                            style: TextStyle(color: Colors.red),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Task Details
               Row(
                 children: [
@@ -320,15 +328,85 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: _buildTaskDetail(
-                      'الفئة',
-                      task.categoryId ?? 'غير محدد',
-                      Icons.category,
-                      AppTheme.infoColor,
+                    child: Consumer(
+                      builder: (context, ref, child) {
+                        final categoriesAsync = ref.watch(categoryControllerProvider);
+                        return categoriesAsync.when(
+                          data: (categories) {
+                            final category = categories.firstWhere(
+                              (cat) => cat.id == task.categoryId,
+                              orElse: () => CategoryModel(id: '', name: 'غير محدد', description: ''),
+                            );
+                            return _buildTaskDetail(
+                              'الفئة',
+                              category.name,
+                              Icons.category,
+                              AppTheme.infoColor,
+                            );
+                          },
+                          loading: () => _buildTaskDetail(
+                            'الفئة',
+                            'جاري التحميل...',
+                            Icons.category,
+                            AppTheme.infoColor,
+                          ),
+                          error: (error, stack) => _buildTaskDetail(
+                            'الفئة',
+                            'خطأ في التحميل',
+                            Icons.category,
+                            AppTheme.infoColor,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
+              
+              // Show custom options for custom task type
+              if (task.type == TaskType.custom && task.customOptions != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppTheme.primaryColor.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.list_alt,
+                            color: AppTheme.primaryColor,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'الخيارات المخصصة:',
+                            style: TextStyle(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        task.customOptions!,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -336,7 +414,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     );
   }
 
-  Widget _buildTaskDetail(String title, String value, IconData icon, Color color) {
+  Widget _buildTaskDetail(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
         Container(
@@ -345,11 +428,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
             color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 20,
-          ),
+          child: Icon(icon, color: color, size: 20),
         ),
         const SizedBox(height: 8),
         Text(
@@ -362,9 +441,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         const SizedBox(height: 4),
         Text(
           title,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey[600],
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
           textAlign: TextAlign.center,
         ),
       ],
@@ -376,24 +455,20 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.assignment_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.assignment_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'لا توجد مهام بعد',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
             'قم بإضافة مهمة جديدة للبدء',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[500],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
           ),
         ],
       ),
@@ -425,151 +500,513 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   void _showAddTaskDialog() {
     final titleController = TextEditingController();
     final maxPointsController = TextEditingController(text: '10');
+    final customOptionsController = TextEditingController();
     TaskType selectedType = TaskType.points;
+    String? selectedCategoryId;
+    bool showMaxPoints = true; // Default to points type
+    bool showCustomOptions = false;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('إضافة مهمة جديدة'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'عنوان المهمة',
-                border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('إضافة مهمة جديدة'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'عنوان المهمة',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Category Selection
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final categoriesAsync = ref.watch(categoryControllerProvider);
+                      return categoriesAsync.when(
+                        data: (categories) => DropdownButtonFormField<String>(
+                          value: selectedCategoryId,
+                          decoration: const InputDecoration(
+                            labelText: 'الفئة',
+                            border: OutlineInputBorder(),
+                            helperText: 'اختر فئة للمهمة (اختياري)',
+                          ),
+                          items: [
+                            const DropdownMenuItem<String>(
+                              value: null,
+                              child: Text('بدون فئة'),
+                            ),
+                            ...categories.map((category) => DropdownMenuItem<String>(
+                              value: category.id,
+                              child: Text(category.name),
+                            )),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCategoryId = value;
+                            });
+                          },
+                        ),
+                        loading: () => DropdownButtonFormField<String>(
+                          value: null,
+                          decoration: const InputDecoration(
+                            labelText: 'الفئة',
+                            border: OutlineInputBorder(),
+                            helperText: 'جاري تحميل الفئات...',
+                          ),
+                          items: [],
+                          onChanged: (value) {},
+                        ),
+                        error: (error, stack) => DropdownButtonFormField<String>(
+                          value: null,
+                          decoration: const InputDecoration(
+                            labelText: 'الفئة',
+                            border: OutlineInputBorder(),
+                            helperText: 'خطأ في تحميل الفئات',
+                          ),
+                          items: [],
+                          onChanged: (value) {},
+                        ),
+                      );
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<TaskType>(
+                    initialValue: selectedType,
+                    decoration: const InputDecoration(
+                      labelText: 'نوع المهمة',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: TaskType.values.map((type) {
+                      return DropdownMenuItem(
+                        value: type,
+                        child: Text(_getTaskTypeText(type)),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedType = value;
+                          // Show different fields based on task type
+                          showMaxPoints = value == TaskType.points;
+                          showCustomOptions = value == TaskType.custom;
+                          
+                          // Update max points controller with appropriate default
+                          if (value == TaskType.yesNo) {
+                            maxPointsController.text = '2';
+                          } else if (value == TaskType.custom) {
+                            maxPointsController.text = '5';
+                          } else if (value == TaskType.points) {
+                            maxPointsController.text = '10';
+                          }
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Show max points field only for points type
+                  if (showMaxPoints) ...[
+                    TextField(
+                      controller: maxPointsController,
+                      decoration: const InputDecoration(
+                        labelText: 'النقاط القصوى',
+                        border: OutlineInputBorder(),
+                        helperText: 'أقصى عدد من النقاط التي يمكن الحصول عليها',
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  
+                  // Show custom options field only for custom type
+                  if (showCustomOptions) ...[
+                    TextField(
+                      controller: customOptionsController,
+                      decoration: const InputDecoration(
+                        labelText: 'خيارات مخصصة',
+                        border: OutlineInputBorder(),
+                        helperText: '(مثال: ممتاز، جيد، مقبول، ضعيف)',
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  
+                  // Show task type description
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _getTaskTypeIcon(selectedType),
+                          color: AppTheme.primaryColor,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _getTaskTypeDescription(selectedType),
+                            style: TextStyle(
+                              color: AppTheme.primaryColor,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: maxPointsController,
-              decoration: const InputDecoration(
-                labelText: 'النقاط القصوى',
-                border: OutlineInputBorder(),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('إلغاء'),
               ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<TaskType>(
-              value: selectedType,
-              decoration: const InputDecoration(
-                labelText: 'نوع المهمة',
-                border: OutlineInputBorder(),
+              ElevatedButton(
+                onPressed: () async {
+                  if (titleController.text.isNotEmpty) {
+                    // Validate based on task type
+                    if (selectedType == TaskType.points) {
+                      if (maxPointsController.text.isEmpty || 
+                          int.tryParse(maxPointsController.text) == null ||
+                          int.parse(maxPointsController.text) <= 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('يرجى إدخال عدد صحيح موجب للنقاط القصوى'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                    }
+                    
+                    if (selectedType == TaskType.custom) {
+                      if (customOptionsController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('يرجى إدخال الخيارات المخصصة'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                    }
+
+                    final task = TaskModel(
+                      id: '',
+                      title: titleController.text,
+                      type: selectedType,
+                      categoryId: selectedCategoryId,
+                      maxPoints: selectedType == TaskType.points 
+                          ? int.tryParse(maxPointsController.text) ?? 10
+                          : (selectedType == TaskType.yesNo ? 2 : 5), // Default values for other types
+                      customOptions: selectedType == TaskType.custom 
+                          ? customOptionsController.text 
+                          : null,
+                    );
+
+                    await ref.read(taskControllerProvider.notifier).addItem(task);
+                    Navigator.pop(context);
+                    
+                    // Show success message with task type info
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('تم إضافة مهمة ${_getTaskTypeText(selectedType)} بنجاح'),
+                        backgroundColor: AppTheme.successColor,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('إضافة'),
               ),
-              items: TaskType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(_getTaskTypeText(type)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  selectedType = value;
-                }
-              },
-            ),
-          ],
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (titleController.text.isNotEmpty) {
-                final task = TaskModel(
-                  id: '',
-                  title: titleController.text,
-                  type: selectedType,
-                  maxPoints: int.tryParse(maxPointsController.text) ?? 10,
-                );
-                
-                await ref.read(taskControllerProvider.notifier).addItem(task);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('إضافة'),
-          ),
-        ],
       ),
     );
   }
 
   void _showEditTaskDialog(TaskModel task) {
     final titleController = TextEditingController(text: task.title);
-    final maxPointsController = TextEditingController(text: task.maxPoints.toString());
+    final maxPointsController = TextEditingController(
+      text: task.maxPoints.toString(),
+    );
+    final customOptionsController = TextEditingController(
+      text: task.customOptions ?? '',
+    );
     TaskType selectedType = task.type;
+    String? selectedCategoryId = task.categoryId;
+    bool showMaxPoints = task.type == TaskType.points;
+    bool showCustomOptions = task.type == TaskType.custom;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تعديل المهمة'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'عنوان المهمة',
-                border: OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('تعديل المهمة'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'عنوان المهمة',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Category Selection
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final categoriesAsync = ref.watch(categoryControllerProvider);
+                      return categoriesAsync.when(
+                        data: (categories) => DropdownButtonFormField<String>(
+                          value: selectedCategoryId,
+                          decoration: const InputDecoration(
+                            labelText: 'الفئة',
+                            border: OutlineInputBorder(),
+                            helperText: 'اختر فئة للمهمة (اختياري)',
+                          ),
+                          items: [
+                            const DropdownMenuItem<String>(
+                              value: null,
+                              child: Text('بدون فئة'),
+                            ),
+                            ...categories.map((category) => DropdownMenuItem<String>(
+                              value: category.id,
+                              child: Text(category.name),
+                            )),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCategoryId = value;
+                            });
+                          },
+                        ),
+                        loading: () => DropdownButtonFormField<String>(
+                          value: null,
+                          decoration: const InputDecoration(
+                            labelText: 'الفئة',
+                            border: OutlineInputBorder(),
+                            helperText: 'جاري تحميل الفئات...',
+                          ),
+                          items: [],
+                          onChanged: (value) {},
+                        ),
+                        error: (error, stack) => DropdownButtonFormField<String>(
+                          value: null,
+                          decoration: const InputDecoration(
+                            labelText: 'الفئة',
+                            border: OutlineInputBorder(),
+                            helperText: 'خطأ في تحميل الفئات',
+                          ),
+                          items: [],
+                          onChanged: (value) {},
+                        ),
+                      );
+                    },
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<TaskType>(
+                    initialValue: selectedType,
+                    decoration: const InputDecoration(
+                      labelText: 'نوع المهمة',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: TaskType.values.map((type) {
+                      return DropdownMenuItem(
+                        value: type,
+                        child: Text(_getTaskTypeText(type)),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedType = value;
+                          // Show different fields based on task type
+                          showMaxPoints = value == TaskType.points;
+                          showCustomOptions = value == TaskType.custom;
+                          
+                          // Update max points controller with appropriate default
+                          if (value == TaskType.yesNo) {
+                            maxPointsController.text = '2';
+                          } else if (value == TaskType.custom) {
+                            maxPointsController.text = '5';
+                          }
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Show max points field only for points type
+                  if (showMaxPoints) ...[
+                    TextField(
+                      controller: maxPointsController,
+                      decoration: const InputDecoration(
+                        labelText: 'النقاط القصوى',
+                        border: OutlineInputBorder(),
+                        helperText: 'أقصى عدد من النقاط التي يمكن الحصول عليها',
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  
+                  // Show custom options field only for custom type
+                  if (showCustomOptions) ...[
+                    TextField(
+                      controller: customOptionsController,
+                      decoration: const InputDecoration(
+                        labelText: 'خيارات مخصصة',
+                        border: OutlineInputBorder(),
+                        helperText: 'أدخل الخيارات مفصولة بفاصلة (مثال: ممتاز، جيد، مقبول، ضعيف)',
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  
+                  // Show task type description
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _getTaskTypeIcon(selectedType),
+                          color: AppTheme.primaryColor,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _getTaskTypeDescription(selectedType),
+                            style: TextStyle(
+                              color: AppTheme.primaryColor,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: maxPointsController,
-              decoration: const InputDecoration(
-                labelText: 'النقاط القصوى',
-                border: OutlineInputBorder(),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('إلغاء'),
               ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<TaskType>(
-              value: selectedType,
-              decoration: const InputDecoration(
-                labelText: 'نوع المهمة',
-                border: OutlineInputBorder(),
+              ElevatedButton(
+                onPressed: () async {
+                  if (titleController.text.isNotEmpty) {
+                    // Validate based on task type
+                    if (selectedType == TaskType.points) {
+                      if (maxPointsController.text.isEmpty || 
+                          int.tryParse(maxPointsController.text) == null ||
+                          int.parse(maxPointsController.text) <= 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('يرجى إدخال عدد صحيح موجب للنقاط القصوى'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                    }
+                    
+                    if (selectedType == TaskType.custom) {
+                      if (customOptionsController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('يرجى إدخال الخيارات المخصصة'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                    }
+
+                    final updatedTask = TaskModel(
+                      id: task.id,
+                      title: titleController.text,
+                      type: selectedType,
+                      categoryId: selectedCategoryId,
+                      maxPoints: selectedType == TaskType.points 
+                          ? int.tryParse(maxPointsController.text) ?? 10
+                          : (selectedType == TaskType.yesNo ? 2 : 5), // Default values for other types
+                      customOptions: selectedType == TaskType.custom 
+                          ? customOptionsController.text 
+                          : null,
+                    );
+
+                    await ref
+                        .read(taskControllerProvider.notifier)
+                        .updateItem(updatedTask);
+                    Navigator.pop(context);
+                    
+                    // Show success message with task type info
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('تم تحديث مهمة ${_getTaskTypeText(selectedType)} بنجاح'),
+                        backgroundColor: AppTheme.successColor,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('حفظ'),
               ),
-              items: TaskType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(_getTaskTypeText(type)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  selectedType = value;
-                }
-              },
-            ),
-          ],
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (titleController.text.isNotEmpty) {
-                final updatedTask = TaskModel(
-                  id: task.id,
-                  title: titleController.text,
-                  type: selectedType,
-                  maxPoints: int.tryParse(maxPointsController.text) ?? 10,
-                );
-                
-                await ref.read(taskControllerProvider.notifier).updateItem(updatedTask);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('حفظ'),
-          ),
-        ],
       ),
     );
+  }
+
+  IconData _getTaskTypeIcon(TaskType type) {
+    switch (type) {
+      case TaskType.points:
+        return Icons.stars;
+      case TaskType.yesNo:
+        return Icons.check_circle_outline;
+      case TaskType.custom:
+        return Icons.list_alt;
+    }
+  }
+
+  String _getTaskTypeDescription(TaskType type) {
+    switch (type) {
+      case TaskType.points:
+        return 'مهمة بنظام النقاط - يمكن للطالب الحصول على نقاط من 0 إلى النقاط القصوى';
+      case TaskType.yesNo:
+        return 'مهمة نعم/لا - إما أن يكمل الطالب المهمة أو لا (نقطتان)';
+      case TaskType.custom:
+        return 'مهمة مخصصة - يمكن تحديد خيارات تقييم مخصصة';
+    }
   }
 
   void _showDeleteConfirmation(TaskModel task) {

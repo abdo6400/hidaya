@@ -13,44 +13,101 @@ class AuthController extends StateNotifier<AppUser?> {
   static const String _userKey = 'user_data';
   final AuthService _authService;
   late final SharedPreferences _prefs;
+  bool _initialized = false;
 
   AuthController(this._authService) : super(null) {
     _init();
   }
 
   Future<void> _init() async {
-    _prefs = await SharedPreferences.getInstance();
-    await _loadUser();
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      await _loadUser();
+      _initialized = true;
+    } catch (e) {
+      print('AuthController initialization error: $e');
+      _initialized = true;
+    }
   }
 
   Future<void> _saveUser(AppUser user) async {
-    final userMap = user.toJsonMap();
-    await _prefs.setString(_userKey, jsonEncode(userMap));
+    try {
+      final userMap = user.toJsonMap();
+      print(userMap);
+      await _prefs.setString(_userKey, jsonEncode(userMap));
+    } catch (e) {
+      print('Error saving user: $e');
+    }
   }
 
   Future<void> _loadUser() async {
-    final userData = _prefs.getString(_userKey);
-    if (userData != null) {
-      try {
+    try {
+      final userData = _prefs.getString(_userKey);
+      if (userData != null && userData.isNotEmpty) {
         final userMap = jsonDecode(userData) as Map<String, dynamic>;
+        print(userMap);
+        // Safely extract values with null checks
+        final id = userMap['id'] as String?;
+        final name = userMap['name'] as String?;
+        final username = userMap['username'] as String?;
+        final roleString = userMap['role'] as String?;
+        final email = userMap['email'] as String?;
+        final phone = userMap['phone'] as String?;
+        final status = userMap['status'] as String? ?? 'active';
+        final createdAtString = userMap['createdAt'] as String?;
+        final lastLoginString = userMap['lastLogin'] as String?;
+        
+        // Validate required fields
+        if (id == null || name == null || username == null || roleString == null) {
+          print('Missing required user fields, clearing invalid data');
+          await _clearUser();
+          return;
+        }
+        
+        // Validate that required fields are not empty
+        if (id.isEmpty || name.isEmpty || username.isEmpty || roleString.isEmpty) {
+          print('Required user fields are empty, clearing invalid data');
+          await _clearUser();
+          return;
+        }
+        
+        // Parse dates safely
+        DateTime? createdAt;
+        DateTime? lastLogin;
+        
+        if (createdAtString != null && createdAtString.isNotEmpty) {
+          try {
+            createdAt = DateTime.parse(createdAtString);
+          } catch (e) {
+            print('Error parsing createdAt: $e');
+          }
+        }
+        
+        if (lastLoginString != null && lastLoginString.isNotEmpty) {
+          try {
+            lastLogin = DateTime.parse(lastLoginString);
+          } catch (e) {
+            print('Error parsing lastLogin: $e');
+          }
+        }
+        
         state = AppUser(
-          id: userMap['id'] as String,
-          name: userMap['name'] as String,
-          username: userMap['username'] as String,
-          role: _roleFromString(userMap['role'] as String),
-          email: userMap['email'] as String?,
-          phone: userMap['phone'] as String?,
-          status: userMap['status'] as String? ?? 'active',
-          createdAt: userMap['createdAt'] != null
-              ? DateTime.parse(userMap['createdAt'] as String)
-              : null,
-          lastLogin: userMap['lastLogin'] != null
-              ? DateTime.parse(userMap['lastLogin'] as String)
-              : null,
+          id: id,
+          name: name,
+          username: username,
+          role: _roleFromString(roleString),
+          email: email,
+          phone: phone,
+          status: status,
+          createdAt: createdAt,
+          lastLogin: lastLogin,
         );
-      } catch (e) {
-        await _clearUser();
+        
+        print('User loaded successfully: ${state?.username}');
       }
+    } catch (e) {
+      print('Error loading user: $e');
+      await _clearUser();
     }
   }
 
@@ -67,7 +124,36 @@ class AuthController extends StateNotifier<AppUser?> {
   }
 
   Future<void> _clearUser() async {
-    await _prefs.remove(_userKey);
+    try {
+      await _prefs.remove(_userKey);
+      state = null;
+      print('User data cleared successfully');
+    } catch (e) {
+      print('Error clearing user: $e');
+      state = null;
+    }
+  }
+
+  // Public method to clear corrupted data
+  Future<void> clearCorruptedData() async {
+    print('Clearing corrupted user data...');
+    await _clearUser();
+  }
+
+  // Debug method to check current stored data
+  Future<void> debugUserData() async {
+    try {
+      final userData = _prefs.getString(_userKey);
+      if (userData != null) {
+        print('Current stored user data: $userData');
+        final userMap = jsonDecode(userData) as Map<String, dynamic>;
+        print('Parsed user map: $userMap');
+      } else {
+        print('No user data stored');
+      }
+    } catch (e) {
+      print('Error reading user data: $e');
+    }
   }
 
   Future<AppUser?> registerAsParent({
@@ -94,7 +180,7 @@ class AuthController extends StateNotifier<AppUser?> {
       }
       return user;
     } catch (e) {
-      
+      print('Registration error: $e');
       return null;
     }
   }
@@ -112,13 +198,21 @@ class AuthController extends StateNotifier<AppUser?> {
       }
       return user;
     } catch (e) {
+      print('Login error: $e');
       return null;
     }
   }
 
   Future<void> logout() async {
-    await _authService.logout();
-    await _clearUser();
-    state = null;
+    try {
+      await _authService.logout();
+      await _clearUser();
+      state = null;
+    } catch (e) {
+      print('Logout error: $e');
+      state = null;
+    }
   }
+
+  bool get isInitialized => _initialized;
 }

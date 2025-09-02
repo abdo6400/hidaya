@@ -35,11 +35,26 @@ class AppUser {
 
   factory AppUser.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
+    final username = (d['username'] as String?)?.toLowerCase().trim();
+    final name = d['name'] as String?;
+    final role = d['role'] as String?;
+    
+    // Validate required fields
+    if (username == null || username.isEmpty) {
+      throw FormatException('Username is required and cannot be empty');
+    }
+    if (name == null || name.isEmpty) {
+      throw FormatException('Name is required and cannot be empty');
+    }
+    if (role == null || role.isEmpty) {
+      throw FormatException('Role is required and cannot be empty');
+    }
+    
     return AppUser(
       id: doc.id,
-      name: d['name'] as String,
-      username: (d['username'] as String?)?.toLowerCase().trim() ?? '',
-      role: _roleFromString(d['role'] as String),
+      name: name,
+      username: username,
+      role: _roleFromString(role),
       email: d['email'] as String?,
       phone: d['phone'] as String?,
       status: d['status'] as String? ?? 'active',
@@ -54,6 +69,7 @@ class AppUser {
       'username': username,
       if (passwordHash != null) 'password': passwordHash,
       'role': role.name,
+      'name': name,
       'email': email,
       'phone': phone,
       'status': status,
@@ -68,6 +84,7 @@ class AppUser {
       'id': id,
       'username': username,
       'role': role.name,
+      'name': name,
       'email': email,
       'phone': phone,
       'status': status,

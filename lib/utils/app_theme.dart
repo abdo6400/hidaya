@@ -49,7 +49,7 @@ class AppTheme {
       iconTheme: const IconThemeData(color: primaryColor, size: 24),
       titleTextStyle: const TextStyle(
         color: primaryColor,
-        fontSize: 22,
+        fontSize: 16,
         fontWeight: FontWeight.bold,
         letterSpacing: 0.5,
       ),

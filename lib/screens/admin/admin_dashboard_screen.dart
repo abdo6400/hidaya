@@ -9,14 +9,17 @@ import 'package:hidaya/widgets/quick_action_button.dart';
 import 'package:hidaya/utils/app_theme.dart';
 import '../../providers/firebase_providers.dart';
 import 'create_group_screen.dart';
-import 'edit_group_screen.dart';
-import 'group_detail_screen.dart';
+import 'group_details_screen.dart';
+import 'groups_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
-  const AdminDashboardScreen({super.key});
+  final Function(int)? onTabChange;
+
+  const AdminDashboardScreen({super.key, this.onTabChange});
 
   @override
-  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() =>
+      _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
@@ -27,32 +30,17 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       body: CustomScrollView(
         slivers: [
           // Welcome Header
-          SliverToBoxAdapter(
-            child: _buildWelcomeHeader(),
-          ),
-          
+          SliverToBoxAdapter(child: _buildWelcomeHeader()),
+
           // Stats Cards
-          SliverToBoxAdapter(
-            child: _buildStatsSection(),
-          ),
-          
+          SliverToBoxAdapter(child: _buildStatsSection()),
+
           // Quick Actions
-          SliverToBoxAdapter(
-            child: _buildQuickActionsSection(),
-          ),
-          
+          SliverToBoxAdapter(child: _buildQuickActionsSection()),
+
           // Recent Groups
-          SliverToBoxAdapter(
-            child: _buildRecentGroupsSection(),
-          ),
+          SliverToBoxAdapter(child: _buildRecentGroupsSection()),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _createNewGroup(),
-        icon: const Icon(Icons.add),
-        label: const Text('إنشاء مجموعة'),
-        backgroundColor: AppTheme.secondaryColor,
-        foregroundColor: Colors.white,
       ),
     );
   }
@@ -136,22 +124,22 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           Consumer(
             builder: (context, ref, child) {
               final statsAsync = ref.watch(dashboardStatsProvider);
-              
+
               return statsAsync.when(
                 data: (stats) => DashboardStatsGrid(
                   cards: [
                     DashboardStatsCard(
-                      title: 'إجمالي المستخدمين',
-                      value: '${stats['totalUsers'] ?? 0}',
-                      icon: Icons.people,
-                      color: AppTheme.primaryColor,
+                      title: 'إجمالي المحفظين',
+                      value: '${stats['totalSheikhs'] ?? 0}',
+                      icon: Icons.person,
+                      color: AppTheme.successColor,
                       onTap: () {},
                     ),
                     DashboardStatsCard(
-                      title: 'المحفظين النشطين',
-                      value: '${stats['activeUsers'] ?? 0}',
-                      icon: Icons.person,
-                      color: AppTheme.successColor,
+                      title: 'إجمالي أولياء الأمور',
+                      value: '${stats['totalParents'] ?? 0}',
+                      icon: Icons.family_restroom,
+                      color: AppTheme.accentColor,
                       onTap: () {},
                     ),
                     DashboardStatsCard(
@@ -213,15 +201,21 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 color: AppTheme.successColor,
               ),
               QuickActionButton(
-                title: 'إضافة مهمة',
-                icon: Icons.task,
-                onTap: () => _navigateToTasks(),
+                title: 'إدارة المجموعات',
+                icon: Icons.groups,
+                onTap: () => _navigateToGroups(),
                 color: AppTheme.warningColor,
               ),
               QuickActionButton(
-                title: 'جدول المواعيد',
-                icon: Icons.schedule,
-                onTap: () => _navigateToSchedules(),
+                title: 'إضافة مهمة',
+                icon: Icons.task,
+                onTap: () => _navigateToTasks(),
+                color: AppTheme.accentColor,
+              ),
+              QuickActionButton(
+                title: 'إضافة ولي أمر',
+                icon: Icons.person,
+                onTap: () => _navigateToParents(),
                 color: AppTheme.infoColor,
               ),
               QuickActionButton(
@@ -229,12 +223,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 icon: Icons.analytics,
                 onTap: () => _navigateToReports(),
                 color: AppTheme.accentColor,
-              ),
-              QuickActionButton(
-                title: 'الإشعارات',
-                icon: Icons.notifications,
-                onTap: () => _navigateToNotifications(),
-                color: AppTheme.secondaryColor,
               ),
             ],
           ),
@@ -252,6 +240,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              IconButton(
+                onPressed: () => _createNewGroup(),
+                icon: const Icon(Icons.add),
+              ),
               Text(
                 'المجموعات الحديثة',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -260,7 +252,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ),
               ),
               TextButton(
-                onPressed: () => _navigateToAllGroups(),
+                onPressed: () => _navigateToGroups(),
                 child: Text(
                   'عرض الكل',
                   style: TextStyle(
@@ -275,20 +267,23 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           Consumer(
             builder: (context, ref, child) {
               final groupsAsync = ref.watch(scheduleGroupsControllerProvider);
-              
+
               return groupsAsync.when(
                 loading: () => const LoadingIndicator(),
-                error: (error, stack) => app_error.AppErrorWidget(message: error.toString()),
+                error: (error, stack) =>
+                    app_error.AppErrorWidget(message: error.toString()),
                 data: (groups) {
                   if (groups.isEmpty) {
                     return _buildEmptyState();
                   }
-                  
+
                   // Show only recent 3 groups
                   final recentGroups = groups.take(3).toList();
-                  
+
                   return Column(
-                    children: recentGroups.map((group) => _buildGroupCard(group)).toList(),
+                    children: recentGroups
+                        .map((group) => _buildGroupCard(group))
+                        .toList(),
                   );
                 },
               );
@@ -309,24 +304,20 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.groups_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.groups_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'لا توجد مجموعات',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
             'اضغط على + لإنشاء مجموعة جديدة',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[500],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -367,13 +358,14 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     children: [
                       Text(
                         group.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        group.description.isNotEmpty ? group.description : 'لا يوجد وصف',
+                        group.description.isNotEmpty
+                            ? group.description
+                            : 'لا يوجد وصف',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.grey[600],
                         ),
@@ -385,7 +377,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         children: [
                           _buildStatusChip(
                             group.isActive ? 'نشط' : 'غير نشط',
-                            group.isActive ? AppTheme.successColor : Colors.grey,
+                            group.isActive
+                                ? AppTheme.successColor
+                                : Colors.grey,
                           ),
                           const SizedBox(width: 8),
                           _buildStatusChip(
@@ -430,9 +424,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
   // Navigation methods
   void _createNewGroup() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const CreateGroupScreen()),
-    );
+    final result = await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const CreateGroupScreen()));
 
     if (result == true) {
       ref.invalidate(scheduleGroupsControllerProvider);
@@ -440,26 +434,32 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   }
 
   void _viewGroupDetails(ScheduleGroupModel group) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => AdminGroupDetailScreen(group: group)),
-    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => GroupDetailsScreen(group: group)),
+    ).then((_) {
+      ref.invalidate(scheduleGroupsControllerProvider);
+    });
   }
 
   void _navigateToSheikhs() {
-    // Navigate to sheikhs tab
-    // This would typically be handled by the parent admin screen
+    // Navigate to sheikhs tab (index 1)
+    widget.onTabChange?.call(1);
   }
 
   void _navigateToCategories() {
-    // Navigate to categories tab
+    // Navigate to categories tab (index 2)
+    widget.onTabChange?.call(2);
   }
 
   void _navigateToTasks() {
-    // Navigate to tasks tab
+    // Navigate to tasks tab (index 3)
+    widget.onTabChange?.call(3);
   }
 
-  void _navigateToSchedules() {
-    // Navigate to schedules
+  void _navigateToParents() {
+    // Navigate to schedules tab (index 4)
+    widget.onTabChange?.call(4);
   }
 
   void _navigateToReports() {
@@ -471,16 +471,12 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
   }
 
-  void _navigateToNotifications() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🚧 شاشة الإشعارات - سيتم تنفيذها قريباً'),
-        backgroundColor: AppTheme.infoColor,
-      ),
+  void _navigateToGroups() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const GroupsScreen()),
     );
   }
 
-  void _navigateToAllGroups() {
-    // Navigate to all groups view
-  }
+
 }

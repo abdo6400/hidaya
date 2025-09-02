@@ -4,6 +4,7 @@ import 'package:hidaya/controllers/auth_controller.dart';
 import 'package:hidaya/models/user_model.dart';
 import 'package:hidaya/utils/constants.dart';
 import 'package:hidaya/utils/app_theme.dart';
+import 'package:hidaya/providers/firebase_providers.dart';
 
 class SheikhScreen extends ConsumerStatefulWidget {
   const SheikhScreen({super.key});
@@ -90,6 +91,7 @@ class _SheikhScreenState extends ConsumerState<SheikhScreen> {
             // Header
             Container(
               height: 200,
+              width: double.infinity,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
@@ -355,6 +357,7 @@ class _SheikhScreenState extends ConsumerState<SheikhScreen> {
   }
 
   Widget _buildQuickStats() {
+    final authState = ref.watch(authControllerProvider);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -368,49 +371,71 @@ class _SheikhScreenState extends ConsumerState<SheikhScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'إجمالي الطلاب',
-                  '24',
-                  Icons.school,
-                  AppTheme.primaryColor,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'الفئات التعليمية',
-                  '3',
-                  Icons.category,
-                  AppTheme.successColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'المهام المكتملة',
-                  '18',
-                  Icons.task_alt,
-                  AppTheme.infoColor,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  'نسبة الحضور',
-                  '95%',
-                  Icons.check_circle,
-                  AppTheme.warningColor,
-                ),
-              ),
-            ],
-          ),
+          if (authState == null)
+            const SizedBox.shrink()
+          else
+            Consumer(
+              builder: (context, ref, _) {
+                final asyncStats = ref.watch(sheikhHomeStatsProvider(authState.id));
+                return asyncStats.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (e, st) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Text('تعذر تحميل الإحصائيات'),
+                  ),
+                  data: (stats) => Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              'إجمالي الطلاب',
+                              '${stats['totalStudents'] ?? 0}',
+                              Icons.school,
+                              AppTheme.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              'عدد المجموعات',
+                              '${stats['groupsCount'] ?? 0}',
+                              Icons.groups,
+                              AppTheme.successColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              'تكليفات نشطة',
+                              '${stats['activeAssignments'] ?? 0}',
+                              Icons.task_alt,
+                              AppTheme.infoColor,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              'نتائج مكتملة',
+                              '${stats['completedResults'] ?? 0}',
+                              Icons.check_circle,
+                              AppTheme.warningColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );
@@ -469,6 +494,7 @@ class _SheikhScreenState extends ConsumerState<SheikhScreen> {
   }
 
   Widget _buildTodaySchedule() {
+    final authState = ref.watch(authControllerProvider);
     return Container(
       margin: const EdgeInsets.all(16),
       child: Column(
@@ -482,27 +508,53 @@ class _SheikhScreenState extends ConsumerState<SheikhScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildScheduleCard(
-            '08:00 - 09:00',
-            'فئة حفظ القرآن',
-            'المجموعة أ',
-            Icons.book,
-            AppTheme.primaryColor,
-          ),
-          _buildScheduleCard(
-            '10:00 - 11:00',
-            'فئة التلاوة',
-            'المجموعة ب',
-            Icons.mic,
-            AppTheme.successColor,
-          ),
-          _buildScheduleCard(
-            '14:00 - 15:00',
-            'فئة السلوك',
-            'المجموعة ج',
-            Icons.psychology,
-            AppTheme.infoColor,
-          ),
+          if (authState == null)
+            const SizedBox.shrink()
+          else
+            Consumer(
+              builder: (context, ref, _) {
+                final asyncGroups = ref.watch(sheikhTodayGroupsProvider(authState.id));
+                return asyncGroups.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (e, st) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Text('تعذر تحميل الجدول'),
+                  ),
+                  data: (groups) {
+                    if (groups.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          'لا توجد حصص اليوم',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                        ),
+                      );
+                    }
+                    return Column(
+                      children: groups.map((g) {
+                        // Try to pick first time slot of today's schedule for display
+                        final today = g.days.isNotEmpty ? g.days.first : g.days.first;
+                        final time = today.timeSlots.isNotEmpty
+                            ? '${today.timeSlots.first.startTime} - ${today.timeSlots.first.endTime}'
+                            : '';
+                        return _buildScheduleCard(
+                          time.isEmpty ? '—' : time,
+                          'المجموعة',
+                          g.name,
+                          Icons.groups,
+                          AppTheme.primaryColor,
+                        );
+                      }).toList(),
+                    );
+                  },
+                );
+              },
+            ),
         ],
       ),
     );

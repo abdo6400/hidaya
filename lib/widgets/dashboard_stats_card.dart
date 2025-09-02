@@ -104,13 +104,8 @@ class DashboardStatsCard extends StatelessWidget {
             if (onTap != null) ...[
               const SizedBox(height: 8),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 14,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(width: 4),
                   Text(
                     'عرض التفاصيل',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -118,6 +113,11 @@ class DashboardStatsCard extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                       fontSize: 11,
                     ),
+                  ),  const SizedBox(width: 4),
+                   Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: Colors.grey[400],
                   ),
                 ],
               ),
@@ -145,6 +145,7 @@ class DashboardStatsGrid extends StatelessWidget {
       crossAxisCount: crossAxisCount,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
+      childAspectRatio: 1.05,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       children: cards,

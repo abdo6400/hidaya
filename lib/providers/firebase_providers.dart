@@ -3,6 +3,7 @@ import '../services/firebase_service.dart';
 import '../models/user_model.dart';
 import '../models/child_model.dart';
 import '../models/task_model.dart';
+import '../models/schedule_group_model.dart';
 
 // Firebase service provider
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
@@ -49,4 +50,34 @@ final tasksByCategoryProvider = FutureProvider.family<List<TaskModel>, String>((
 final usersByRoleProvider = FutureProvider.family<List<AppUser>, UserRole>((ref, role) async {
   final firebaseService = ref.read(firebaseServiceProvider);
   return await firebaseService.getUsersByRole(role);
+});
+
+// Sheikh home stats provider
+final sheikhHomeStatsProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, sheikhId) async {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  return await firebaseService.getSheikhHomeStats(sheikhId);
+});
+
+// Sheikh today schedule groups provider
+final sheikhTodayGroupsProvider = FutureProvider.family<List<ScheduleGroupModel>, String>((ref, sheikhId) async {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  return await firebaseService.getTodayScheduleGroupsForSheikh(sheikhId);
+});
+
+// Group students provider
+final childrenInGroupProvider = FutureProvider.family<List<ChildModel>, String>((ref, groupId) async {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  return await firebaseService.getChildrenInGroup(groupId);
+});
+
+// Attendance by group and date
+final attendanceByGroupAndDateProvider = FutureProvider.family< Map<String, String>, ({String groupId, String dateISO}) >((ref, params) async {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  return await firebaseService.getAttendanceByGroupAndDate(params.groupId, params.dateISO);
+});
+
+// Child tasks provider
+final childTasksProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, childId) async {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  return await firebaseService.getChildTasks(childId);
 });

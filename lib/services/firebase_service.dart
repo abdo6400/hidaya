@@ -5,6 +5,7 @@ import '../models/task_model.dart';
 import '../models/child_model.dart';
 import '../models/assignment_model.dart';
 import '../models/schedule_group_model.dart';
+import '../models/schedule_model.dart';
 import '../utils/firestore_constants.dart';
 
 class FirebaseService {
@@ -235,13 +236,18 @@ class FirebaseService {
   // ==================== STATISTICS ====================
   
   Future<Map<String, dynamic>> getDashboardStats() async {
+    // Fetch all collections needed for counts
     final usersSnapshot = await _users.get();
+    final sheikhsSnapshot = await _users.where('role', isEqualTo: UserRole.sheikh.name).get();
+    final parentsSnapshot = await _users.where('role', isEqualTo: UserRole.parent.name).get();
     final categoriesSnapshot = await _categories.get();
     final childrenSnapshot = await _children.get();
     final tasksSnapshot = await _tasks.get();
 
     return {
       'totalUsers': usersSnapshot.docs.length,
+      'totalSheikhs': sheikhsSnapshot.docs.length,
+      'totalParents': parentsSnapshot.docs.length,
       'totalCategories': categoriesSnapshot.docs.length,
       'totalChildren': childrenSnapshot.docs.length,
       'totalTasks': tasksSnapshot.docs.length,
@@ -294,8 +300,7 @@ class FirebaseService {
     }
 
     // Get today's date for lesson counting
-    final today = DateTime.now();
-    final todayString = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    // Placeholder for when lessons collection is added
 
     // Count today's lessons (this would be from a lessons collection)
     int todayLessons = 0; // Placeholder - would need lessons collection
@@ -363,5 +368,152 @@ class FirebaseService {
   Future<List<ChildModel>> getChildrenInGroup(String groupId) async {
     final snapshot = await _children.where('groupId', isEqualTo: groupId).get();
     return snapshot.docs.map((doc) => ChildModel.fromDoc(doc)).toList();
+  }
+
+  // ==================== SHEIKH FEATURES ====================
+
+  Future<Map<String, dynamic>> getSheikhHomeStats(String sheikhId) async {
+    // Groups taught by sheikh
+    final groups = await getScheduleGroupsBySheikh(sheikhId);
+    final groupIds = groups.map((g) => g.id).toList();
+
+    // Children in sheikh's groups
+    int totalStudents = 0;
+    if (groupIds.isNotEmpty) {
+      for (final gid in groupIds) {
+        final students = await getChildrenInGroup(gid);
+        totalStudents += students.length;
+      }
+    }
+
+    // Active assignments by this sheikh
+    final assignments = await _assignments
+        .where('sheikhId', isEqualTo: sheikhId)
+        .where('isActive', isEqualTo: true)
+        .get();
+
+    // Completed results for children under this sheikh
+    int completedResults = 0;
+    if (assignments.docs.isNotEmpty) {
+      final childIds = assignments.docs
+          .map((a) => a.data()['childId'] as String)
+          .toSet()
+          .toList();
+      if (childIds.isNotEmpty) {
+        // Firestore 'whereIn' supports up to 10 items. Split if needed.
+        for (var i = 0; i < childIds.length; i += 10) {
+          final batch = childIds.sublist(i, i + 10 > childIds.length ? childIds.length : i + 10);
+          final resultsSnap = await _results
+              .where('childId', whereIn: batch)
+              .get();
+          completedResults += resultsSnap.docs.length;
+        }
+      }
+    }
+
+    return {
+      'totalStudents': totalStudents,
+      'activeAssignments': assignments.docs.length,
+      'completedResults': completedResults,
+      'groupsCount': groupIds.length,
+    };
+  }
+
+  Future<List<ScheduleGroupModel>> getTodayScheduleGroupsForSheikh(String sheikhId) async {
+    final groups = await getScheduleGroupsBySheikh(sheikhId);
+    final now = DateTime.now();
+    final weekday = now.weekday; // 1=Mon .. 7=Sun
+    WeekDay toWeekDay(int w) {
+      switch (w) {
+        case DateTime.monday:
+          return WeekDay.monday;
+        case DateTime.tuesday:
+          return WeekDay.tuesday;
+        case DateTime.wednesday:
+          return WeekDay.wednesday;
+        case DateTime.thursday:
+          return WeekDay.thursday;
+        case DateTime.friday:
+          return WeekDay.friday;
+        case DateTime.saturday:
+          return WeekDay.saturday;
+        default:
+          return WeekDay.sunday;
+      }
+    }
+    final todayWd = toWeekDay(weekday);
+    return groups.where((g) => g.isActive && g.weekDays.contains(todayWd)).toList();
+  }
+
+  Future<Map<String, String>> getAttendanceByGroupAndDate(String groupId, String dateISO) async {
+    // dateISO format: YYYY-MM-DD
+    final children = await getChildrenInGroup(groupId);
+    final childIds = children.map((c) => c.id).toList();
+    if (childIds.isEmpty) return {};
+
+    final Map<String, String> statusByChild = {};
+    for (var i = 0; i < childIds.length; i += 10) {
+      final batch = childIds.sublist(i, i + 10 > childIds.length ? childIds.length : i + 10);
+      final snap = await _attendance
+          .where('childId', whereIn: batch)
+          .where('date', isEqualTo: dateISO)
+          .get();
+      for (final doc in snap.docs) {
+        final d = doc.data();
+        statusByChild[d['childId'] as String] = d['status'] as String;
+      }
+    }
+    return statusByChild;
+  }
+
+  Future<void> markAttendanceForGroup(String groupId, String dateISO, Map<String, String> statusByChild) async {
+    // For each child set a record for that date
+    final batch = _db.batch();
+    statusByChild.forEach((childId, status) {
+      final ref = _attendance.doc('${childId}_$dateISO');
+      batch.set(ref, {
+        'childId': childId,
+        'date': dateISO,
+        'status': status,
+        'markedAt': FieldValue.serverTimestamp(),
+        'groupId': groupId,
+      });
+    });
+    await batch.commit();
+  }
+
+  // ==================== CHILD TASKS ====================
+
+  Future<void> assignTaskToChild({
+    required String childId,
+    required String taskId,
+    DateTime? dueDate,
+  }) async {
+    await _childTasks.add({
+      'childId': childId,
+      'taskId': taskId,
+      'status': 'assigned',
+      'assignedAt': FieldValue.serverTimestamp(),
+      if (dueDate != null) 'dueDate': Timestamp.fromDate(dueDate),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getChildTasks(String childId) async {
+    final snap = await _childTasks.where('childId', isEqualTo: childId).get();
+    return snap.docs.map((d) => {
+      'id': d.id,
+      ...d.data(),
+    }).toList();
+  }
+
+  Future<void> updateChildTaskStatus({
+    required String childTaskId,
+    required String status,
+  }) async {
+    await _childTasks.doc(childTaskId).update({
+      'status': status,
+      if (status == 'completed') 'completedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 }

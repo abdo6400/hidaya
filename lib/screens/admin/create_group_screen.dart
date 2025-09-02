@@ -143,7 +143,9 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Directionality(
+      textDirection: TextDirection.rtl,
+   child:  Scaffold(
       appBar: AppBar(
         title: const Text('إنشاء مجموعة جديدة'),
         centerTitle: true,
@@ -371,7 +373,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   String _getDayName(WeekDay day) {

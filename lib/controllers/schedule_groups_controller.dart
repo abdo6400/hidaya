@@ -53,24 +53,33 @@ class ScheduleGroupsController extends BaseController<ScheduleGroupModel> {
   Future<void> deleteScheduleGroup(String groupId) => deleteItem(groupId);
 
   // Check for schedule conflicts
-  Future<bool> hasScheduleConflict(List<WeekDay> days, List<TimeSlot> timeSlots) async {
-    // This is a simplified conflict check - you can implement more sophisticated logic
-    final existingGroups = await _firebaseService.getAllScheduleGroups();
+  Future<bool> hasScheduleConflict(
+    List<WeekDay> days, 
+    List<TimeSlot> timeSlots, 
+    {String? excludeGroupId}
+  ) async {
+    // // This is a simplified conflict check - you can implement more sophisticated logic
+    // final existingGroups = await _firebaseService.getAllScheduleGroups();
     
-    for (final group in existingGroups) {
-      for (final day in group.days) {
-        if (days.contains(day.day)) {
-          // Check if time slots overlap
-          for (final existingSlot in day.timeSlots) {
-            for (final newSlot in timeSlots) {
-              if (_doTimeSlotsOverlap(existingSlot, newSlot)) {
-                return true; // Conflict found
-              }
-            }
-          }
-        }
-      }
-    }
+    // for (final group in existingGroups) {
+    //   // Skip the group being edited
+    //   if (excludeGroupId != null && group.id == excludeGroupId) {
+    //     continue;
+    //   }
+      
+    //   for (final day in group.days) {
+    //     if (days.contains(day.day)) {
+    //       // Check if time slots overlap
+    //       for (final existingSlot in day.timeSlots) {
+    //         for (final newSlot in timeSlots) {
+    //           if (_doTimeSlotsOverlap(existingSlot, newSlot)) {
+    //             return true; // Conflict found
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
     return false; // No conflicts
   }
 
