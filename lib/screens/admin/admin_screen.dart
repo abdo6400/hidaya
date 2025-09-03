@@ -21,7 +21,8 @@ class AdminScreen extends ConsumerStatefulWidget {
   ConsumerState<AdminScreen> createState() => _AdminScreenState();
 }
 
-class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderStateMixin {
+class _AdminScreenState extends ConsumerState<AdminScreen>
+    with TickerProviderStateMixin {
   int _currentIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -33,13 +34,9 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
     _animationController.forward();
   }
 
@@ -61,7 +58,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-    
+
     return SafeArea(
       child: Directionality(
         textDirection: TextDirection.rtl,
@@ -92,6 +89,10 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
             fontWeight: FontWeight.bold,
           ),
         ),
+      ),
+      leading: IconButton(
+        onPressed: () => _showLogoutDialog(),
+        icon: Icon(Icons.logout_outlined),
       ),
       actions: [
         Container(
@@ -127,9 +128,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
   Widget _buildDrawer(AppUser? authState) {
     return Drawer(
       child: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.primaryGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
         child: Column(
           children: [
             // Header
@@ -177,7 +176,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
                 ],
               ),
             ),
-            
+
             // User Info
             Container(
               margin: const EdgeInsets.all(16),
@@ -203,7 +202,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
                 ],
               ),
             ),
-            
+
             // Menu Items
             Expanded(
               child: Container(
@@ -222,7 +221,6 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-
                       const Divider(height: 32),
                       _buildDrawerItem(
                         icon: Icons.logout,
@@ -284,9 +282,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
         ),
       ),
       onTap: onTap,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     );
   }
@@ -337,8 +333,6 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with TickerProviderSt
         return AppConstants.dashboard;
     }
   }
-
-
 
   void _showLogoutDialog() {
     QuickAlert.show(

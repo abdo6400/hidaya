@@ -22,11 +22,6 @@ final parentStatsProvider = FutureProvider.family<Map<String, dynamic>, String>(
   return await firebaseService.getParentStats(parentId);
 });
 
-// Sheikh stats provider
-final sheikhStatsProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, sheikhId) async {
-  final firebaseService = ref.read(firebaseServiceProvider);
-  return await firebaseService.getSheikhStats(sheikhId);
-});
 
 // Children by parent provider
 final childrenByParentProvider = FutureProvider.family<List<ChildModel>, String>((ref, parentId) async {
@@ -34,11 +29,6 @@ final childrenByParentProvider = FutureProvider.family<List<ChildModel>, String>
   return await firebaseService.getChildrenByParent(parentId);
 });
 
-// Children by sheikh provider
-final childrenBySheikhProvider = FutureProvider.family<List<ChildModel>, String>((ref, sheikhId) async {
-  final firebaseService = ref.read(firebaseServiceProvider);
-  return await firebaseService.getChildrenBySheikh(sheikhId);
-});
 
 // Tasks by category provider
 final tasksByCategoryProvider = FutureProvider.family<List<TaskModel>, String>((ref, categoryId) async {
@@ -70,23 +60,19 @@ final sheikhGroupsProvider = FutureProvider.family<List<ScheduleGroupModel>, Str
   return await firebaseService.getScheduleGroupsBySheikh(sheikhId);
 });
 
+// All schedule groups provider
+final allScheduleGroupsProvider = FutureProvider<List<ScheduleGroupModel>>((ref) async {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  return await firebaseService.getAllScheduleGroups();
+});
+
 // Group students provider
 final childrenInGroupProvider = FutureProvider.family<List<ChildModel>, String>((ref, groupId) async {
   final firebaseService = ref.read(firebaseServiceProvider);
   return await firebaseService.getChildrenInGroup(groupId);
 });
 
-// Attendance by group and date
-final attendanceByGroupAndDateProvider = FutureProvider.family< Map<String, String>, ({String groupId, String dateISO}) >((ref, params) async {
-  final firebaseService = ref.read(firebaseServiceProvider);
-  return await firebaseService.getAttendanceByGroupAndDate(params.groupId, params.dateISO);
-});
 
-// Child tasks provider
-final childTasksProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, childId) async {
-  final firebaseService = ref.read(firebaseServiceProvider);
-  return await firebaseService.getChildTasks(childId);
-});
 
 // Tasks available for a group: category-specific + global (categoryId == null)
 final tasksForGroupProvider = FutureProvider.family<List<TaskModel>, String>((ref, groupId) async {

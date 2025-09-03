@@ -36,7 +36,7 @@ class _SheikhsScreenState extends ConsumerState<SheikhsScreen> {
               SliverToBoxAdapter(
                 child: Container(
                   margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: AppTheme.primaryGradient,
                     borderRadius: BorderRadius.circular(24),
@@ -67,25 +67,12 @@ class _SheikhsScreenState extends ConsumerState<SheikhsScreen> {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'إدارة المحفظين',
-                                  style: AppTheme.islamicTitleStyle.copyWith(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'إضافة وإدارة المحفظين وتعيينهم للفئات التعليمية',
-                                  style: AppTheme.arabicTextStyle.copyWith(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
+                            child: Text(
+                              'إدارة المحفظين',
+                              style: AppTheme.islamicTitleStyle.copyWith(
+                                color: Colors.white,
+                                fontSize: 24,
+                              ),
                             ),
                           ),
                         ],
@@ -585,56 +572,56 @@ class _SheikhsScreenState extends ConsumerState<SheikhsScreen> {
       builder: (context) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-        title: const Text('تعديل بيانات المحفظ'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'اسم المحفظ',
-                border: OutlineInputBorder(),
+          title: const Text('تعديل بيانات المحفظ'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'اسم المحفظ',
+                  border: OutlineInputBorder(),
+                ),
               ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'رقم الهاتف',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(
+                  labelText: 'البريد الإلكتروني',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء'),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: phoneController,
-              decoration: const InputDecoration(
-                labelText: 'رقم الهاتف',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: 'البريد الإلكتروني',
-                border: OutlineInputBorder(),
-              ),
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isNotEmpty) {
+                  await _editSheikh(
+                    sheikh.id,
+                    nameController.text,
+                    phoneController.text,
+                    emailController.text,
+                  );
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('حفظ'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty) {
-                await _editSheikh(
-                  sheikh.id,
-                  nameController.text,
-                  phoneController.text,
-                  emailController.text,
-                );
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('حفظ'),
-          ),
-        ],
-      ),
       ),
     );
   }

@@ -30,7 +30,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           SliverToBoxAdapter(
             child: Container(
               margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: AppTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(24),
@@ -61,25 +61,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'إدارة المهام التعليمية',
-                              style: AppTheme.islamicTitleStyle.copyWith(
-                                color: Colors.white,
-                                fontSize: 24,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'إنشاء وإدارة المهام التعليمية وتعيينها للطلاب',
-                              style: AppTheme.arabicTextStyle.copyWith(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'إدارة المهام التعليمية',
+                          style: AppTheme.islamicTitleStyle.copyWith(
+                            color: Colors.white,
+                            fontSize: 24,
+                          ),
                         ),
                       ),
                     ],
@@ -330,12 +317,18 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                   Expanded(
                     child: Consumer(
                       builder: (context, ref, child) {
-                        final categoriesAsync = ref.watch(categoryControllerProvider);
+                        final categoriesAsync = ref.watch(
+                          categoryControllerProvider,
+                        );
                         return categoriesAsync.when(
                           data: (categories) {
                             final category = categories.firstWhere(
                               (cat) => cat.id == task.categoryId,
-                              orElse: () => CategoryModel(id: '', name: 'غير محدد', description: ''),
+                              orElse: () => CategoryModel(
+                                id: '',
+                                name: 'غير محدد',
+                                description: '',
+                              ),
                             );
                             return _buildTaskDetail(
                               'الفئة',
@@ -362,9 +355,10 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                   ),
                 ],
               ),
-              
+
               // Show custom options for custom task type
-              if (task.type == TaskType.custom && task.customOptions != null) ...[
+              if (task.type == TaskType.custom &&
+                  task.customOptions != null) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -525,11 +519,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Category Selection
                   Consumer(
                     builder: (context, ref, child) {
-                      final categoriesAsync = ref.watch(categoryControllerProvider);
+                      final categoriesAsync = ref.watch(
+                        categoryControllerProvider,
+                      );
                       return categoriesAsync.when(
                         data: (categories) => DropdownButtonFormField<String>(
                           value: selectedCategoryId,
@@ -543,10 +539,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                               value: null,
                               child: Text('بدون فئة'),
                             ),
-                            ...categories.map((category) => DropdownMenuItem<String>(
-                              value: category.id,
-                              child: Text(category.name),
-                            )),
+                            ...categories.map(
+                              (category) => DropdownMenuItem<String>(
+                                value: category.id,
+                                child: Text(category.name),
+                              ),
+                            ),
                           ],
                           onChanged: (value) {
                             setState(() {
@@ -564,20 +562,21 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                           items: [],
                           onChanged: (value) {},
                         ),
-                        error: (error, stack) => DropdownButtonFormField<String>(
-                          value: null,
-                          decoration: const InputDecoration(
-                            labelText: 'الفئة',
-                            border: OutlineInputBorder(),
-                            helperText: 'خطأ في تحميل الفئات',
-                          ),
-                          items: [],
-                          onChanged: (value) {},
-                        ),
+                        error: (error, stack) =>
+                            DropdownButtonFormField<String>(
+                              value: null,
+                              decoration: const InputDecoration(
+                                labelText: 'الفئة',
+                                border: OutlineInputBorder(),
+                                helperText: 'خطأ في تحميل الفئات',
+                              ),
+                              items: [],
+                              onChanged: (value) {},
+                            ),
                       );
                     },
                   ),
-                  
+
                   const SizedBox(height: 16),
                   DropdownButtonFormField<TaskType>(
                     initialValue: selectedType,
@@ -598,7 +597,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                           // Show different fields based on task type
                           showMaxPoints = value == TaskType.points;
                           showCustomOptions = value == TaskType.custom;
-                          
+
                           // Update max points controller with appropriate default
                           if (value == TaskType.yesNo) {
                             maxPointsController.text = '2';
@@ -612,7 +611,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Show max points field only for points type
                   if (showMaxPoints) ...[
                     TextField(
@@ -626,7 +625,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  
+
                   // Show custom options field only for custom type
                   if (showCustomOptions) ...[
                     TextField(
@@ -640,7 +639,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  
+
                   // Show task type description
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -681,19 +680,21 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                   if (titleController.text.isNotEmpty) {
                     // Validate based on task type
                     if (selectedType == TaskType.points) {
-                      if (maxPointsController.text.isEmpty || 
+                      if (maxPointsController.text.isEmpty ||
                           int.tryParse(maxPointsController.text) == null ||
                           int.parse(maxPointsController.text) <= 0) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('يرجى إدخال عدد صحيح موجب للنقاط القصوى'),
+                            content: Text(
+                              'يرجى إدخال عدد صحيح موجب للنقاط القصوى',
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );
                         return;
                       }
                     }
-                    
+
                     if (selectedType == TaskType.custom) {
                       if (customOptionsController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -711,21 +712,27 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                       title: titleController.text,
                       type: selectedType,
                       categoryId: selectedCategoryId,
-                      maxPoints: selectedType == TaskType.points 
+                      maxPoints: selectedType == TaskType.points
                           ? int.tryParse(maxPointsController.text) ?? 10
-                          : (selectedType == TaskType.yesNo ? 2 : 5), // Default values for other types
-                      customOptions: selectedType == TaskType.custom 
-                          ? customOptionsController.text 
+                          : (selectedType == TaskType.yesNo
+                                ? 2
+                                : 5), // Default values for other types
+                      customOptions: selectedType == TaskType.custom
+                          ? customOptionsController.text
                           : null,
                     );
 
-                    await ref.read(taskControllerProvider.notifier).addItem(task);
+                    await ref
+                        .read(taskControllerProvider.notifier)
+                        .addItem(task);
                     Navigator.pop(context);
-                    
+
                     // Show success message with task type info
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('تم إضافة مهمة ${_getTaskTypeText(selectedType)} بنجاح'),
+                        content: Text(
+                          'تم إضافة مهمة ${_getTaskTypeText(selectedType)} بنجاح',
+                        ),
                         backgroundColor: AppTheme.successColor,
                       ),
                     );
@@ -772,11 +779,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Category Selection
                   Consumer(
                     builder: (context, ref, child) {
-                      final categoriesAsync = ref.watch(categoryControllerProvider);
+                      final categoriesAsync = ref.watch(
+                        categoryControllerProvider,
+                      );
                       return categoriesAsync.when(
                         data: (categories) => DropdownButtonFormField<String>(
                           value: selectedCategoryId,
@@ -790,10 +799,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                               value: null,
                               child: Text('بدون فئة'),
                             ),
-                            ...categories.map((category) => DropdownMenuItem<String>(
-                              value: category.id,
-                              child: Text(category.name),
-                            )),
+                            ...categories.map(
+                              (category) => DropdownMenuItem<String>(
+                                value: category.id,
+                                child: Text(category.name),
+                              ),
+                            ),
                           ],
                           onChanged: (value) {
                             setState(() {
@@ -811,20 +822,21 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                           items: [],
                           onChanged: (value) {},
                         ),
-                        error: (error, stack) => DropdownButtonFormField<String>(
-                          value: null,
-                          decoration: const InputDecoration(
-                            labelText: 'الفئة',
-                            border: OutlineInputBorder(),
-                            helperText: 'خطأ في تحميل الفئات',
-                          ),
-                          items: [],
-                          onChanged: (value) {},
-                        ),
+                        error: (error, stack) =>
+                            DropdownButtonFormField<String>(
+                              value: null,
+                              decoration: const InputDecoration(
+                                labelText: 'الفئة',
+                                border: OutlineInputBorder(),
+                                helperText: 'خطأ في تحميل الفئات',
+                              ),
+                              items: [],
+                              onChanged: (value) {},
+                            ),
                       );
                     },
                   ),
-                  
+
                   const SizedBox(height: 16),
                   DropdownButtonFormField<TaskType>(
                     initialValue: selectedType,
@@ -845,7 +857,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                           // Show different fields based on task type
                           showMaxPoints = value == TaskType.points;
                           showCustomOptions = value == TaskType.custom;
-                          
+
                           // Update max points controller with appropriate default
                           if (value == TaskType.yesNo) {
                             maxPointsController.text = '2';
@@ -857,7 +869,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Show max points field only for points type
                   if (showMaxPoints) ...[
                     TextField(
@@ -871,7 +883,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  
+
                   // Show custom options field only for custom type
                   if (showCustomOptions) ...[
                     TextField(
@@ -879,13 +891,14 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                       decoration: const InputDecoration(
                         labelText: 'خيارات مخصصة',
                         border: OutlineInputBorder(),
-                        helperText: 'أدخل الخيارات مفصولة بفاصلة (مثال: ممتاز، جيد، مقبول، ضعيف)',
+                        helperText:
+                            'أدخل الخيارات مفصولة بفاصلة (مثال: ممتاز، جيد، مقبول، ضعيف)',
                       ),
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
                   ],
-                  
+
                   // Show task type description
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -926,19 +939,21 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                   if (titleController.text.isNotEmpty) {
                     // Validate based on task type
                     if (selectedType == TaskType.points) {
-                      if (maxPointsController.text.isEmpty || 
+                      if (maxPointsController.text.isEmpty ||
                           int.tryParse(maxPointsController.text) == null ||
                           int.parse(maxPointsController.text) <= 0) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('يرجى إدخال عدد صحيح موجب للنقاط القصوى'),
+                            content: Text(
+                              'يرجى إدخال عدد صحيح موجب للنقاط القصوى',
+                            ),
                             backgroundColor: Colors.red,
                           ),
                         );
                         return;
                       }
                     }
-                    
+
                     if (selectedType == TaskType.custom) {
                       if (customOptionsController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -956,11 +971,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                       title: titleController.text,
                       type: selectedType,
                       categoryId: selectedCategoryId,
-                      maxPoints: selectedType == TaskType.points 
+                      maxPoints: selectedType == TaskType.points
                           ? int.tryParse(maxPointsController.text) ?? 10
-                          : (selectedType == TaskType.yesNo ? 2 : 5), // Default values for other types
-                      customOptions: selectedType == TaskType.custom 
-                          ? customOptionsController.text 
+                          : (selectedType == TaskType.yesNo
+                                ? 2
+                                : 5), // Default values for other types
+                      customOptions: selectedType == TaskType.custom
+                          ? customOptionsController.text
                           : null,
                     );
 
@@ -968,11 +985,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                         .read(taskControllerProvider.notifier)
                         .updateItem(updatedTask);
                     Navigator.pop(context);
-                    
+
                     // Show success message with task type info
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('تم تحديث مهمة ${_getTaskTypeText(selectedType)} بنجاح'),
+                        content: Text(
+                          'تم تحديث مهمة ${_getTaskTypeText(selectedType)} بنجاح',
+                        ),
                         backgroundColor: AppTheme.successColor,
                       ),
                     );

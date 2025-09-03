@@ -11,6 +11,7 @@ import '../../providers/firebase_providers.dart';
 import 'create_group_screen.dart';
 import 'group_details_screen.dart';
 import 'groups_screen.dart';
+import 'reports_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   final Function(int)? onTabChange;
@@ -48,7 +49,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   Widget _buildWelcomeHeader() {
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AppTheme.primaryGradient,
         borderRadius: BorderRadius.circular(24),
@@ -79,26 +80,17 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                child: 
                     Text(
                       'مرحباً بك في لوحة الإدارة',
                       style: AppTheme.islamicTitleStyle.copyWith(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: 20,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'إدارة التعليم الإسلامي بكل سهولة',
-                      style: AppTheme.arabicTextStyle.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
+                    
+                  
+               
               ),
             ],
           ),
@@ -463,11 +455,9 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   }
 
   void _navigateToReports() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🚧 شاشة التقارير - سيتم تنفيذها قريباً'),
-        backgroundColor: AppTheme.infoColor,
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ReportsScreen()),
     );
   }
 

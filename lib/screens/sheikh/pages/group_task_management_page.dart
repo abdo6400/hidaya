@@ -1,19 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hidaya/models/schedule_group_model.dart';
 import 'package:hidaya/models/task_model.dart';
 import 'package:hidaya/providers/firebase_providers.dart';
 import 'package:hidaya/utils/app_theme.dart';
 
-class SheikhTasksPage extends ConsumerStatefulWidget {
+class GroupTaskManagementPage extends ConsumerStatefulWidget {
   final String sheikhId;
-  const SheikhTasksPage({super.key, required this.sheikhId});
+  final ScheduleGroupModel group;
+  final String timeSlot;
+
+  const GroupTaskManagementPage({
+    super.key,
+    required this.sheikhId,
+    required this.group,
+    required this.timeSlot,
+  });
 
   @override
-  ConsumerState<SheikhTasksPage> createState() => _SheikhTasksPageState();
+  ConsumerState<GroupTaskManagementPage> createState() =>
+      _GroupTaskManagementPageState();
 }
 
-class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
-  String? _selectedGroupId;
+class _GroupTaskManagementPageState
+    extends ConsumerState<GroupTaskManagementPage> {
   String? _selectedChildId;
   String _childQuery = '';
   final Map<String, int> _taskPointsDraft = {};
@@ -25,74 +35,28 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: Text(widget.group.name), elevation: 0),
+        body: Column(
           children: [
-            _buildGroupSelector(),
-            const SizedBox(height: 12),
-            if (_selectedGroupId != null) _buildChildSelector(),
-            const SizedBox(height: 16),
-            Expanded(child: _buildTasksList()),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildChildSelector(),
+                    const SizedBox(height: 16),
+                    Expanded(child: _buildTasksList()),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildGroupSelector() {
-    return Consumer(
-      builder: (context, ref, _) {
-        final groupsAsync = ref.watch(sheikhGroupsProvider(widget.sheikhId));
-        return groupsAsync.when(
-          loading: () => _buildLoadingCard('جاري تحميل المجموعات...'),
-          error: (e, st) => _buildErrorCard('تعذر تحميل المجموعات'),
-          data: (groups) => Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: DropdownButtonFormField<String>(
-              value: _selectedGroupId,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
-                labelText: 'اختر مجموعة',
-                prefixIcon: Icon(Icons.groups, color: AppTheme.primaryColor),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
-              items: groups
-                  .map(
-                    (g) => DropdownMenuItem(value: g.id, child: Text(g.name)),
-                  )
-                  .toList(),
-              onChanged: (val) => setState(() {
-                _selectedGroupId = val;
-                _selectedChildId = null;
-                _childQuery = '';
-                _clearAllDrafts();
-              }),
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -100,7 +64,7 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
     return Consumer(
       builder: (context, ref, _) {
         final studentsAsync = ref.watch(
-          childrenInGroupProvider(_selectedGroupId!),
+          childrenInGroupProvider(widget.group.id),
         );
         return studentsAsync.when(
           loading: () => _buildLoadingCard('جاري تحميل الطلاب...'),
@@ -200,17 +164,17 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
   }
 
   Widget _buildTasksList() {
-    if (_selectedGroupId == null || _selectedChildId == null) {
+    if (_selectedChildId == null) {
       return _buildPlaceholder(
         icon: Icons.assignment_outlined,
-        title: 'اختر مجموعة وطالب',
+        title: 'اختر طالب',
         subtitle: 'لعرض المهام المتاحة للتقييم',
       );
     }
 
     return Consumer(
       builder: (context, ref, _) {
-        final tasksAsync = ref.watch(tasksForGroupProvider(_selectedGroupId!));
+        final tasksAsync = ref.watch(tasksForGroupProvider(widget.group.id));
         return tasksAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, st) => _buildPlaceholder(
@@ -345,14 +309,15 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
 
   Widget _buildTaskTitleInput(TaskModel task) {
     return TextField(
-      controller: TextEditingController(text: _taskTitleDraft[task.id] ?? task.title)
-        ..selection = TextSelection.collapsed(offset: (_taskTitleDraft[task.id] ?? task.title).length),
+      controller:
+          TextEditingController(text: _taskTitleDraft[task.id] ?? task.title)
+            ..selection = TextSelection.collapsed(
+              offset: (_taskTitleDraft[task.id] ?? task.title).length,
+            ),
       decoration: InputDecoration(
         labelText: 'عنوان المهمة',
         prefixIcon: Icon(Icons.title, color: AppTheme.primaryColor),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: Colors.white,
       ),
@@ -389,22 +354,6 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
-              // const SizedBox(height: 4),
-              // Container(
-              //   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              //   decoration: BoxDecoration(
-              //     color: _getTaskTypeColor(task.type).withOpacity(0.1),
-              //     borderRadius: BorderRadius.circular(8),
-              //   ),
-              //   child: Text(
-              //     _getTaskTypeLabel(task),
-              //     style: TextStyle(
-              //       color: _getTaskTypeColor(task.type),
-              //       fontSize: 12,
-              //       fontWeight: FontWeight.w500,
-              //     ),
-              //   ),
-              // ),
             ],
           ),
         ),
@@ -573,6 +522,9 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: TextField(
+          controller: TextEditingController(
+            text: _taskNotesDraft[task.id] ?? '',
+          ),
           maxLines: 3,
           decoration: InputDecoration(
             hintText: 'أدخل ملاحظاتك حول أداء الطالب...',
@@ -679,19 +631,15 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
   }
 
   Future<void> _saveAllTasks() async {
-    if (_selectedChildId == null ||
-        _selectedGroupId == null ||
-        _editedTaskIds.isEmpty) {
+    if (_selectedChildId == null || _editedTaskIds.isEmpty) {
       return;
     }
 
     setState(() => _isSaving = true);
 
     try {
-      // Fetch group meta for category
-
       final tasksAsync = await ref.read(
-        tasksForGroupProvider(_selectedGroupId!).future,
+        tasksForGroupProvider(widget.group.id).future,
       );
 
       // Save all edited tasks
@@ -723,6 +671,7 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
 
       // Clear all drafts after successful save
       _clearAllDrafts();
+      _selectedChildId=null;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -769,23 +718,27 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
     required String? notes,
     required String? categoryId,
   }) async {
-    await ref.read(firebaseServiceProvider).submitTaskResult(
-      _selectedChildId!,
-      task.id,
-      points,
-      notes,
-      dateISO: DateTime.now().toIso8601String().substring(0, 10),
-      groupId: _selectedGroupId,
-      categoryId: categoryId,
-      sheikhId: widget.sheikhId,
-      taskTitle: _taskTitleDraft[task.id]?.isNotEmpty == true ? _taskTitleDraft[task.id] : task.title,
-      taskType: task.type == TaskType.points
-          ? 'points'
-          : task.type == TaskType.yesNo
-          ? 'yesno'
-          : 'custom',
-      maxPoints: task.type == TaskType.points ? task.maxPoints : null,
-    );
+    await ref
+        .read(firebaseServiceProvider)
+        .submitTaskResult(
+          _selectedChildId!,
+          task.id,
+          points,
+          notes,
+          dateISO: DateTime.now().toIso8601String().substring(0, 10),
+          groupId: widget.group.id,
+          categoryId: categoryId,
+          sheikhId: widget.sheikhId,
+          taskTitle: _taskTitleDraft[task.id]?.isNotEmpty == true
+              ? _taskTitleDraft[task.id]
+              : task.title,
+          taskType: task.type == TaskType.points
+              ? 'points'
+              : task.type == TaskType.yesNo
+              ? 'yesno'
+              : 'custom',
+          maxPoints: task.type == TaskType.points ? task.maxPoints : null,
+        );
   }
 
   void _clearAllDrafts() {
@@ -794,6 +747,7 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
       _taskNotesDraft.clear();
       _taskTitleDraft.clear();
       _editedTaskIds.clear();
+     
     });
   }
 
@@ -905,17 +859,6 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
         return Colors.green;
       case TaskType.custom:
         return Colors.orange;
-    }
-  }
-
-  String _getTaskTypeLabel(TaskModel task) {
-    switch (task.type) {
-      case TaskType.points:
-        return 'نقاط (الحد الأقصى ${task.maxPoints})';
-      case TaskType.yesNo:
-        return 'نعم/لا';
-      case TaskType.custom:
-        return 'ملاحظة مخصصة';
     }
   }
 }

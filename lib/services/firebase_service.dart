@@ -4,7 +4,6 @@ import '../models/category_model.dart';
 import '../models/task_model.dart';
 import '../models/task_result_model.dart';
 import '../models/child_model.dart';
-import '../models/assignment_model.dart';
 import '../models/schedule_group_model.dart';
 import '../models/schedule_model.dart';
 import '../utils/firestore_constants.dart';
@@ -13,27 +12,21 @@ class FirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   // Collection references
-  CollectionReference<Map<String, dynamic>> get _users => 
+  CollectionReference<Map<String, dynamic>> get _users =>
       _db.collection(FirestoreCollections.users);
-  CollectionReference<Map<String, dynamic>> get _categories => 
+  CollectionReference<Map<String, dynamic>> get _categories =>
       _db.collection(FirestoreCollections.categories);
-  CollectionReference<Map<String, dynamic>> get _tasks => 
+  CollectionReference<Map<String, dynamic>> get _tasks =>
       _db.collection(FirestoreCollections.tasks);
-  CollectionReference<Map<String, dynamic>> get _children => 
+  CollectionReference<Map<String, dynamic>> get _children =>
       _db.collection(FirestoreCollections.children);
-  CollectionReference<Map<String, dynamic>> get _assignments => 
-      _db.collection(FirestoreCollections.assignments);
-  CollectionReference<Map<String, dynamic>> get _attendance => 
-      _db.collection(FirestoreCollections.attendance);
-  CollectionReference<Map<String, dynamic>> get _childTasks => 
-      _db.collection(FirestoreCollections.childTasks);
-  CollectionReference<Map<String, dynamic>> get _results => 
+  CollectionReference<Map<String, dynamic>> get _results =>
       _db.collection(FirestoreCollections.results);
-  CollectionReference<Map<String, dynamic>> get _scheduleGroups => 
+  CollectionReference<Map<String, dynamic>> get _scheduleGroups =>
       _db.collection(FirestoreCollections.scheduleGroups);
 
   // ==================== USER MANAGEMENT ====================
-  
+
   Future<List<AppUser>> getAllUsers() async {
     final snapshot = await _users.get();
     return snapshot.docs.map((doc) => AppUser.fromDoc(doc)).toList();
@@ -64,10 +57,12 @@ class FirebaseService {
   }
 
   // ==================== CATEGORY MANAGEMENT ====================
-  
+
   Future<List<CategoryModel>> getAllCategories() async {
     final snapshot = await _categories.get();
-    return snapshot.docs.map((doc) => CategoryModel.fromFirestore(doc)).toList();
+    return snapshot.docs
+        .map((doc) => CategoryModel.fromFirestore(doc))
+        .toList();
   }
 
   Future<void> addCategory(CategoryModel category) async {
@@ -83,15 +78,24 @@ class FirebaseService {
   }
 
   // ==================== TASK MANAGEMENT ====================
-  
+
   Future<List<TaskModel>> getAllTasks() async {
     final snapshot = await _tasks.get();
     return snapshot.docs.map((doc) => TaskModel.fromFirestore(doc)).toList();
   }
 
   Future<List<TaskModel>> getTasksByCategory(String categoryId) async {
-    final snapshot = await _tasks.where('categoryId', isEqualTo: categoryId).get();
-    return snapshot.docs.map((doc) => TaskModel.fromFirestore(doc)).toList();
+    final withCategory = await _tasks
+        .where('categoryId', isEqualTo: categoryId)
+        .get();
+    final withoutCategory = await _tasks
+        .where('categoryId', isNull: true)
+        .get();
+
+    return [
+      ...withCategory.docs.map((doc) => TaskModel.fromFirestore(doc)),
+      ...withoutCategory.docs.map((doc) => TaskModel.fromFirestore(doc)),
+    ];
   }
 
   Future<void> addTask(TaskModel task) async {
@@ -107,29 +111,17 @@ class FirebaseService {
   }
 
   // ==================== CHILDREN MANAGEMENT ====================
-  
+
   Future<List<ChildModel>> getAllChildren() async {
     final snapshot = await _children.get();
     return snapshot.docs.map((doc) => ChildModel.fromDoc(doc)).toList();
   }
 
   Future<List<ChildModel>> getChildrenByParent(String parentId) async {
-    final snapshot = await _children.where('parentId', isEqualTo: parentId).get();
-    return snapshot.docs.map((doc) => ChildModel.fromDoc(doc)).toList();
-  }
-
-  Future<List<ChildModel>> getChildrenBySheikh(String sheikhId) async {
-    final assignments = await _assignments
-        .where('sheikhId', isEqualTo: sheikhId)
-        .where('isActive', isEqualTo: true)
+    final snapshot = await _children
+        .where('parentId', isEqualTo: parentId)
         .get();
-    
-    final childIds = assignments.docs.map((doc) => doc.data()['childId'] as String).toList();
-    
-    if (childIds.isEmpty) return [];
-    
-    final childrenSnapshot = await _children.where(FieldPath.documentId, whereIn: childIds).get();
-    return childrenSnapshot.docs.map((doc) => ChildModel.fromDoc(doc)).toList();
+    return snapshot.docs.map((doc) => ChildModel.fromDoc(doc)).toList();
   }
 
   Future<void> addChild(ChildModel child) async {
@@ -147,74 +139,8 @@ class FirebaseService {
     await _children.doc(childId).delete();
   }
 
-  // ==================== ASSIGNMENT MANAGEMENT ====================
-  
-  Future<void> assignChildToCategory(String childId, String categoryId, String sheikhId) async {
-    // Deactivate existing assignments for this child
-    final existingAssignments = await _assignments
-        .where('childId', isEqualTo: childId)
-        .where('isActive', isEqualTo: true)
-        .get();
-    
-    for (var doc in existingAssignments.docs) {
-      await doc.reference.update({'isActive': false});
-    }
-
-    // Create new assignment
-    await _assignments.add({
-      'childId': childId,
-      'categoryId': categoryId,
-      'sheikhId': sheikhId,
-      'isActive': true,
-      'assignedAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  Future<AssignmentModel?> getActiveAssignment(String childId) async {
-    final snapshot = await _assignments
-        .where('childId', isEqualTo: childId)
-        .where('isActive', isEqualTo: true)
-        .limit(1)
-        .get();
-
-    if (snapshot.docs.isEmpty) return null;
-    return AssignmentModel.fromFirestore(snapshot.docs.first);
-  }
-
-  Future<void> unassignChild(String childId) async {
-    final assignments = await _assignments
-        .where('childId', isEqualTo: childId)
-        .where('isActive', isEqualTo: true)
-        .get();
-    
-    for (var doc in assignments.docs) {
-      await doc.reference.update({'isActive': false});
-    }
-  }
-
-  // ==================== ATTENDANCE MANAGEMENT ====================
-  
-  Future<void> markAttendance(String childId, String date, String status) async {
-    await _attendance.add({
-      'childId': childId,
-      'date': date,
-      'status': status,
-      'markedAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  Future<List<Map<String, dynamic>>> getAttendanceByChild(String childId, String startDate, String endDate) async {
-    final snapshot = await _attendance
-        .where('childId', isEqualTo: childId)
-        .where('date', isGreaterThanOrEqualTo: startDate)
-        .where('date', isLessThanOrEqualTo: endDate)
-        .get();
-    
-    return snapshot.docs.map((doc) => doc.data()).toList();
-  }
-
   // ==================== TASK RESULTS MANAGEMENT ====================
-  
+
   Future<void> submitTaskResult(
     String childId,
     String taskId,
@@ -228,7 +154,8 @@ class FirebaseService {
     String? taskType,
     int? maxPoints,
   }) async {
-    final String date = dateISO ?? DateTime.now().toIso8601String().substring(0, 10);
+    final String date =
+        dateISO ?? DateTime.now().toIso8601String().substring(0, 10);
 
     // Upsert behavior: if a result exists for the same child, task, and date, update it; otherwise create.
     final existingSnap = await _results
@@ -266,11 +193,17 @@ class FirebaseService {
         .orderBy('submittedAt', descending: true)
         .get();
     return snapshot.docs
-        .map((doc) => TaskResultModel.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
+        .map(
+          (doc) => TaskResultModel.fromFirestore(
+            doc as DocumentSnapshot<Map<String, dynamic>>,
+          ),
+        )
         .toList();
   }
 
-  Future<Map<String, TaskResultModel>> getTodayResultsByChildAndTask(String childId) async {
+  Future<Map<String, TaskResultModel>> getTodayResultsByChildAndTask(
+    String childId,
+  ) async {
     final String today = DateTime.now().toIso8601String().substring(0, 10);
     final snapshot = await _results
         .where('childId', isEqualTo: childId)
@@ -278,7 +211,9 @@ class FirebaseService {
         .get();
     final Map<String, TaskResultModel> byTaskId = {};
     for (final doc in snapshot.docs) {
-      final model = TaskResultModel.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>);
+      final model = TaskResultModel.fromFirestore(
+        doc as DocumentSnapshot<Map<String, dynamic>>,
+      );
       byTaskId[model.taskId] = model;
     }
     return byTaskId;
@@ -292,12 +227,16 @@ class FirebaseService {
   }
 
   // ==================== STATISTICS ====================
-  
+
   Future<Map<String, dynamic>> getDashboardStats() async {
     // Fetch all collections needed for counts
     final usersSnapshot = await _users.get();
-    final sheikhsSnapshot = await _users.where('role', isEqualTo: UserRole.sheikh.name).get();
-    final parentsSnapshot = await _users.where('role', isEqualTo: UserRole.parent.name).get();
+    final sheikhsSnapshot = await _users
+        .where('role', isEqualTo: UserRole.sheikh.name)
+        .get();
+    final parentsSnapshot = await _users
+        .where('role', isEqualTo: UserRole.parent.name)
+        .get();
     final categoriesSnapshot = await _categories.get();
     final childrenSnapshot = await _children.get();
     final tasksSnapshot = await _tasks.get();
@@ -309,8 +248,12 @@ class FirebaseService {
       'totalCategories': categoriesSnapshot.docs.length,
       'totalChildren': childrenSnapshot.docs.length,
       'totalTasks': tasksSnapshot.docs.length,
-      'activeUsers': usersSnapshot.docs.where((doc) => doc.data()['status'] == 'active').length,
-      'activeChildren': childrenSnapshot.docs.where((doc) => doc.data()['isApproved'] == true).length,
+      'activeUsers': usersSnapshot.docs
+          .where((doc) => doc.data()['status'] == 'active')
+          .length,
+      'activeChildren': childrenSnapshot.docs
+          .where((doc) => doc.data()['isApproved'] == true)
+          .length,
     };
   }
 
@@ -322,15 +265,6 @@ class FirebaseService {
     // Get assignments for children to count sheikhs
     final childIds = children.map((child) => child.id).toList();
     int totalSheikhs = 0;
-    if (childIds.isNotEmpty) {
-      final assignments = await _assignments
-          .where('childId', whereIn: childIds)
-          .where('isActive', isEqualTo: true)
-          .get();
-      
-      final sheikhIds = assignments.docs.map((doc) => doc.data()['sheikhId'] as String).toSet();
-      totalSheikhs = sheikhIds.length;
-    }
 
     return {
       'totalChildren': totalChildren,
@@ -340,51 +274,24 @@ class FirebaseService {
     };
   }
 
-  Future<Map<String, dynamic>> getSheikhStats(String sheikhId) async {
-    final children = await getChildrenBySheikh(sheikhId);
-    final assignments = await _assignments
-        .where('sheikhId', isEqualTo: sheikhId)
-        .where('isActive', isEqualTo: true)
-        .get();
-
-    // Get tasks for categories that this sheikh teaches
-    final categoryIds = assignments.docs.map((doc) => doc.data()['categoryId'] as String).toSet();
-    int activeTasks = 0;
-    if (categoryIds.isNotEmpty) {
-      final tasks = await _tasks
-          .where('categoryId', whereIn: categoryIds.toList())
-          .get();
-      activeTasks = tasks.docs.length;
-    }
-
-    // Get today's date for lesson counting
-    // Placeholder for when lessons collection is added
-
-    // Count today's lessons (this would be from a lessons collection)
-    int todayLessons = 0; // Placeholder - would need lessons collection
-
-    // Count pending reports (this would be from a reports collection)
-    int pendingReports = 0; // Placeholder - would need reports collection
-
-    return {
-      'totalStudents': children.length,
-      'activeAssignments': assignments.docs.length,
-      'activeTasks': activeTasks,
-      'todayLessons': todayLessons,
-      'pendingReports': pendingReports,
-    };
-  }
-
   // ==================== SCHEDULE GROUPS MANAGEMENT ====================
-  
+
   Future<List<ScheduleGroupModel>> getAllScheduleGroups() async {
     final snapshot = await _scheduleGroups.get();
-    return snapshot.docs.map((doc) => ScheduleGroupModel.fromFirestore(doc)).toList();
+    return snapshot.docs
+        .map((doc) => ScheduleGroupModel.fromFirestore(doc))
+        .toList();
   }
 
-  Future<List<ScheduleGroupModel>> getScheduleGroupsBySheikh(String sheikhId) async {
-    final snapshot = await _scheduleGroups.where('sheikhId', isEqualTo: sheikhId).get();
-    return snapshot.docs.map((doc) => ScheduleGroupModel.fromFirestore(doc)).toList();
+  Future<List<ScheduleGroupModel>> getScheduleGroupsBySheikh(
+    String sheikhId,
+  ) async {
+    final snapshot = await _scheduleGroups
+        .where('sheikhId', isEqualTo: sheikhId)
+        .get();
+    return snapshot.docs
+        .map((doc) => ScheduleGroupModel.fromFirestore(doc))
+        .toList();
   }
 
   Future<ScheduleGroupModel?> getScheduleGroupById(String groupId) async {
@@ -408,7 +315,7 @@ class FirebaseService {
   }
 
   // ==================== GROUP CHILDREN MANAGEMENT ====================
-  
+
   Future<void> assignChildToGroup(String childId, String groupId) async {
     await _children.doc(childId).update({
       'groupId': groupId,
@@ -417,15 +324,29 @@ class FirebaseService {
   }
 
   Future<void> removeChildFromGroup(String childId, String groupId) async {
-    await _children.doc(childId).update({
-      'groupId': null,
-      'assignedAt': null,
-    });
+    await _children.doc(childId).update({'groupId': null, 'assignedAt': null});
   }
 
   Future<List<ChildModel>> getChildrenInGroup(String groupId) async {
     final snapshot = await _children.where('groupId', isEqualTo: groupId).get();
     return snapshot.docs.map((doc) => ChildModel.fromDoc(doc)).toList();
+  }
+
+  Future<List<ScheduleGroupModel>> getScheduleGroupsByChild(String childId) async {
+    // First get the child to find their groupId
+    final childDoc = await _children.doc(childId).get();
+    if (!childDoc.exists) return [];
+    
+    final childData = childDoc.data()!;
+    final groupId = childData['groupId'] as String?;
+    
+    if (groupId == null) return [];
+    
+    // Get the group
+    final groupDoc = await _scheduleGroups.doc(groupId).get();
+    if (!groupDoc.exists) return [];
+    
+    return [ScheduleGroupModel.fromFirestore(groupDoc)];
   }
 
   // ==================== SHEIKH FEATURES ====================
@@ -444,40 +365,12 @@ class FirebaseService {
       }
     }
 
-    // Active assignments by this sheikh
-    final assignments = await _assignments
-        .where('sheikhId', isEqualTo: sheikhId)
-        .where('isActive', isEqualTo: true)
-        .get();
-
-    // Completed results for children under this sheikh
-    int completedResults = 0;
-    if (assignments.docs.isNotEmpty) {
-      final childIds = assignments.docs
-          .map((a) => a.data()['childId'] as String)
-          .toSet()
-          .toList();
-      if (childIds.isNotEmpty) {
-        // Firestore 'whereIn' supports up to 10 items. Split if needed.
-        for (var i = 0; i < childIds.length; i += 10) {
-          final batch = childIds.sublist(i, i + 10 > childIds.length ? childIds.length : i + 10);
-          final resultsSnap = await _results
-              .where('childId', whereIn: batch)
-              .get();
-          completedResults += resultsSnap.docs.length;
-        }
-      }
-    }
-
-    return {
-      'totalStudents': totalStudents,
-      'activeAssignments': assignments.docs.length,
-      'completedResults': completedResults,
-      'groupsCount': groupIds.length,
-    };
+    return {'totalStudents': totalStudents, 'groupsCount': groupIds.length};
   }
 
-  Future<List<ScheduleGroupModel>> getTodayScheduleGroupsForSheikh(String sheikhId) async {
+  Future<List<ScheduleGroupModel>> getTodayScheduleGroupsForSheikh(
+    String sheikhId,
+  ) async {
     final groups = await getScheduleGroupsBySheikh(sheikhId);
     final now = DateTime.now();
     final weekday = now.weekday; // 1=Mon .. 7=Sun
@@ -499,79 +392,10 @@ class FirebaseService {
           return WeekDay.sunday;
       }
     }
+
     final todayWd = toWeekDay(weekday);
-    return groups.where((g) => g.isActive && g.weekDays.contains(todayWd)).toList();
-  }
-
-  Future<Map<String, String>> getAttendanceByGroupAndDate(String groupId, String dateISO) async {
-    // dateISO format: YYYY-MM-DD
-    final children = await getChildrenInGroup(groupId);
-    final childIds = children.map((c) => c.id).toList();
-    if (childIds.isEmpty) return {};
-
-    final Map<String, String> statusByChild = {};
-    for (var i = 0; i < childIds.length; i += 10) {
-      final batch = childIds.sublist(i, i + 10 > childIds.length ? childIds.length : i + 10);
-      final snap = await _attendance
-          .where('childId', whereIn: batch)
-          .where('date', isEqualTo: dateISO)
-          .get();
-      for (final doc in snap.docs) {
-        final d = doc.data();
-        statusByChild[d['childId'] as String] = d['status'] as String;
-      }
-    }
-    return statusByChild;
-  }
-
-  Future<void> markAttendanceForGroup(String groupId, String dateISO, Map<String, String> statusByChild) async {
-    // For each child set a record for that date
-    final batch = _db.batch();
-    statusByChild.forEach((childId, status) {
-      final ref = _attendance.doc('${childId}_$dateISO');
-      batch.set(ref, {
-        'childId': childId,
-        'date': dateISO,
-        'status': status,
-        'markedAt': FieldValue.serverTimestamp(),
-        'groupId': groupId,
-      });
-    });
-    await batch.commit();
-  }
-
-  // ==================== CHILD TASKS ====================
-
-  Future<void> assignTaskToChild({
-    required String childId,
-    required String taskId,
-    DateTime? dueDate,
-  }) async {
-    await _childTasks.add({
-      'childId': childId,
-      'taskId': taskId,
-      'status': 'assigned',
-      'assignedAt': FieldValue.serverTimestamp(),
-      if (dueDate != null) 'dueDate': Timestamp.fromDate(dueDate),
-    });
-  }
-
-  Future<List<Map<String, dynamic>>> getChildTasks(String childId) async {
-    final snap = await _childTasks.where('childId', isEqualTo: childId).get();
-    return snap.docs.map((d) => {
-      'id': d.id,
-      ...d.data(),
-    }).toList();
-  }
-
-  Future<void> updateChildTaskStatus({
-    required String childTaskId,
-    required String status,
-  }) async {
-    await _childTasks.doc(childTaskId).update({
-      'status': status,
-      if (status == 'completed') 'completedAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    return groups
+        .where((g) => g.isActive && g.weekDays.contains(todayWd))
+        .toList();
   }
 }

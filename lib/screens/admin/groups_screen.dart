@@ -233,7 +233,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
       data: (groups) {
         final filteredGroups = _filterGroups(groups);
         final activeGroups = filteredGroups.where((g) => g.isActive).length;
-        final totalStudents = _calculateTotalStudents(filteredGroups);
+       
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -256,15 +256,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                   AppTheme.successColor,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatCard(
-                  'إجمالي الطلاب',
-                  '$totalStudents',
-                  Icons.people,
-                  AppTheme.secondaryColor,
-                ),
-              ),
+             
             ],
           ),
         );
@@ -615,15 +607,6 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
     }).toList();
   }
 
-  int _calculateTotalStudents(List<ScheduleGroupModel> groups) {
-    // This is a simplified calculation - in a real app you'd want to cache this
-    int total = 0;
-    for (final group in groups) {
-      // You could implement a more efficient way to get this count
-      total += 0; // Placeholder
-    }
-    return total;
-  }
 
   String _getCategoryName(String categoryId) {
     final categoriesAsync = ref.read(categoryControllerProvider);

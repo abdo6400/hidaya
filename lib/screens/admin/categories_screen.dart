@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hidaya/utils/constants.dart';
 import 'package:hidaya/utils/app_theme.dart';
 import 'package:hidaya/controllers/category_controller.dart';
 import 'package:hidaya/models/category_model.dart';
@@ -20,7 +19,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoryControllerProvider);
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: CustomScrollView(
@@ -29,7 +28,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
           SliverToBoxAdapter(
             child: Container(
               margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: AppTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(24),
@@ -60,25 +59,12 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'إدارة الفئات',
-                              style: AppTheme.islamicTitleStyle.copyWith(
-                                color: Colors.white,
-                                fontSize: 24,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'إنشاء وإدارة الفئات التعليمية للمحفظين والطلاب',
-                              style: AppTheme.arabicTextStyle.copyWith(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'إدارة الفئات',
+                          style: AppTheme.islamicTitleStyle.copyWith(
+                            color: Colors.white,
+                            fontSize: 24,
+                          ),
                         ),
                       ),
                     ],
@@ -93,7 +79,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
             child: Consumer(
               builder: (context, ref, child) {
                 final statsAsync = ref.watch(dashboardStatsProvider);
-                
+
                 return statsAsync.when(
                   data: (stats) => categoriesAsync.when(
                     data: (categories) => Container(
@@ -159,10 +145,11 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                     children: [
                       Text(
                         'قائمة الفئات',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       ElevatedButton.icon(
                         onPressed: () => _showAddCategoryDialog(),
@@ -175,13 +162,15 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Categories List
                   categoriesAsync.when(
                     data: (categories) => categories.isEmpty
                         ? _buildEmptyState()
                         : Column(
-                            children: categories.map((category) => _buildCategoryCard(category)).toList(),
+                            children: categories
+                                .map((category) => _buildCategoryCard(category))
+                                .toList(),
                           ),
                     loading: () => const LoadingIndicator(),
                     error: (error, stack) => app_error.AsyncErrorWidget(
@@ -199,7 +188,12 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -221,11 +215,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 12),
           Text(
@@ -285,16 +275,14 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                       children: [
                         Text(
                           category.name,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           category.description,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -313,7 +301,10 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                         value: 'delete',
                         child: ListTile(
                           leading: Icon(Icons.delete, color: Colors.red),
-                          title: Text('حذف', style: TextStyle(color: Colors.red)),
+                          title: Text(
+                            'حذف',
+                            style: TextStyle(color: Colors.red),
+                          ),
                         ),
                       ),
                     ],
@@ -332,24 +323,20 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.category_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.category_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'لا توجد فئات بعد',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
             'قم بإضافة فئة جديدة للبدء',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[500],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
           ),
         ],
       ),
@@ -375,113 +362,121 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       context: context,
       builder: (context) => Directionality(
         textDirection: TextDirection.rtl,
-        child:AlertDialog(
-        title: const Text('إضافة فئة جديدة'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'اسم الفئة',
-                border: OutlineInputBorder(),
+        child: AlertDialog(
+          title: const Text('إضافة فئة جديدة'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'اسم الفئة',
+                  border: OutlineInputBorder(),
+                ),
               ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'وصف الفئة',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء'),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'وصف الفئة',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isNotEmpty) {
+                  final category = CategoryModel(
+                    id: '',
+                    name: nameController.text,
+                    description: descriptionController.text,
+                  );
+
+                  await ref
+                      .read(categoryControllerProvider.notifier)
+                      .addItem(category);
+                  Navigator.pop(context);
+
+                  // Refresh dashboard stats to update category count
+                  ref.refresh(dashboardStatsProvider);
+                }
+              },
+              child: const Text('إضافة'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty) {
-                final category = CategoryModel(
-                  id: '',
-                  name: nameController.text,
-                  description: descriptionController.text,
-                );
-                
-                await ref.read(categoryControllerProvider.notifier).addItem(category);
-                Navigator.pop(context);
-                
-                // Refresh dashboard stats to update category count
-                ref.refresh(dashboardStatsProvider);
-              }
-            },
-            child: const Text('إضافة'),
-          ),
-        ],
-      ),)
+      ),
     );
   }
 
   void _showEditCategoryDialog(CategoryModel category) {
     final nameController = TextEditingController(text: category.name);
-    final descriptionController = TextEditingController(text: category.description);
+    final descriptionController = TextEditingController(
+      text: category.description,
+    );
 
     showDialog(
       context: context,
       builder: (context) => Directionality(
         textDirection: TextDirection.rtl,
-        child:AlertDialog(
-        title: const Text('تعديل الفئة'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'اسم الفئة',
-                border: OutlineInputBorder(),
+        child: AlertDialog(
+          title: const Text('تعديل الفئة'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'اسم الفئة',
+                  border: OutlineInputBorder(),
+                ),
               ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'وصف الفئة',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء'),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'وصف الفئة',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
+            ElevatedButton(
+              onPressed: () async {
+                if (nameController.text.isNotEmpty) {
+                  final updatedCategory = CategoryModel(
+                    id: category.id,
+                    name: nameController.text,
+                    description: descriptionController.text,
+                  );
+
+                  await ref
+                      .read(categoryControllerProvider.notifier)
+                      .updateItem(updatedCategory);
+                  Navigator.pop(context);
+
+                  // Refresh dashboard stats to update category count
+                  ref.refresh(dashboardStatsProvider);
+                }
+              },
+              child: const Text('حفظ'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty) {
-                final updatedCategory = CategoryModel(
-                  id: category.id,
-                  name: nameController.text,
-                  description: descriptionController.text,
-                );
-                
-                await ref.read(categoryControllerProvider.notifier).updateItem(updatedCategory);
-                Navigator.pop(context);
-                
-                // Refresh dashboard stats to update category count
-                ref.refresh(dashboardStatsProvider);
-              }
-            },
-            child: const Text('حفظ'),
-          ),
-        ],
-      ),)
+      ),
     );
   }
 
@@ -494,9 +489,11 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       confirmBtnText: 'حذف',
       cancelBtnText: 'إلغاء',
       onConfirmBtnTap: () async {
-        await ref.read(categoryControllerProvider.notifier).deleteItem(category.id);
+        await ref
+            .read(categoryControllerProvider.notifier)
+            .deleteItem(category.id);
         Navigator.pop(context);
-        
+
         // Refresh dashboard stats to update category count
         ref.refresh(dashboardStatsProvider);
       },

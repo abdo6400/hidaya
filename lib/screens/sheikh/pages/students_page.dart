@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/providers/firebase_providers.dart';
 import 'package:hidaya/utils/app_theme.dart';
+import 'package:hidaya/screens/sheikh/pages/child_profile_page.dart';
 
 class SheikhStudentsPage extends ConsumerStatefulWidget {
   final String sheikhId;
@@ -13,6 +14,7 @@ class SheikhStudentsPage extends ConsumerStatefulWidget {
 
 class _SheikhStudentsPageState extends ConsumerState<SheikhStudentsPage> {
   String? _selectedGroupId;
+  String? _selectedCategoryId;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +44,19 @@ class _SheikhStudentsPageState extends ConsumerState<SheikhStudentsPage> {
                             leading: CircleAvatar(backgroundColor: AppTheme.primaryColor, child: const Icon(Icons.person, color: Colors.white)),
                             title: Text(s.name),
                             subtitle: Text('العمر: ${s.age}'),
+                            trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400]),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChildProfilePage(
+                                    sheikhId: widget.sheikhId,
+                                    categoryId: _selectedCategoryId!,
+                                    child: s,
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                       );
@@ -63,7 +78,11 @@ class _SheikhStudentsPageState extends ConsumerState<SheikhStudentsPage> {
           value: _selectedGroupId,
           decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'اختر مجموعة'),
           items: groups.map((g) => DropdownMenuItem(value: g.id, child: Text(g.name))).toList(),
-          onChanged: (val) => setState(() => _selectedGroupId = val),
+          onChanged: (val) {
+            setState(() => _selectedGroupId = val);
+            setState(() => _selectedCategoryId = groups.firstWhere((g) => g.id == val).categoryId);
+          },
+         
         ),
       );
     });

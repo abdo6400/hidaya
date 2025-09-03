@@ -41,20 +41,8 @@ class ChildrenController extends BaseController<ChildModel> {
     return await _firebaseService.getChildrenByParent(parentId);
   }
 
-  Future<List<ChildModel>> getChildrenBySheikh(String sheikhId) async {
-    return await _firebaseService.getChildrenBySheikh(sheikhId);
-  }
-
   Future<void> approveChild(String childId) async {
     await handleOperation(() => _firebaseService.updateChild(childId, {'isApproved': true}));
-  }
-
-  Future<void> assignChildToCategory(String childId, String categoryId, String sheikhId) async {
-    await handleOperation(() => _firebaseService.assignChildToCategory(childId, categoryId, sheikhId));
-  }
-
-  Future<void> unassignChild(String childId) async {
-    await handleOperation(() => _firebaseService.unassignChild(childId));
   }
 
   // Legacy method names for backward compatibility

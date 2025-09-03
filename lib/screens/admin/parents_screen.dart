@@ -32,7 +32,7 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
           SliverToBoxAdapter(
             child: Container(
               margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: AppTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(24),
@@ -63,25 +63,12 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'إدارة أولياء الأمور',
-                              style: AppTheme.islamicTitleStyle.copyWith(
-                                color: Colors.white,
-                                fontSize: 24,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'إدارة أولياء الأمور والطلاب المسجلين في النظام',
-                              style: AppTheme.arabicTextStyle.copyWith(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          'إدارة أولياء الأمور',
+                          style: AppTheme.islamicTitleStyle.copyWith(
+                            color: Colors.white,
+                            fontSize: 24,
+                          ),
                         ),
                       ),
                     ],
@@ -825,7 +812,7 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
       builder: (context) => Directionality(
         textDirection: TextDirection.rtl,
         child: Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 10,vertical: 5),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -852,11 +839,7 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.people,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                      const Icon(Icons.people, color: Colors.white, size: 28),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -882,7 +865,9 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
                     padding: const EdgeInsets.all(10),
                     child: Consumer(
                       builder: (context, ref, child) {
-                        final childrenAsync = ref.watch(childrenControllerProvider);
+                        final childrenAsync = ref.watch(
+                          childrenControllerProvider,
+                        );
                         return childrenAsync.when(
                           data: (children) {
                             final parentChildren = children
@@ -914,189 +899,230 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
                             return ListView.separated(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               itemCount: parentChildren.length,
-                              separatorBuilder: (context, index) => const Divider(height: 1),
+                              separatorBuilder: (context, index) =>
+                                  const Divider(height: 1),
                               itemBuilder: (context, index) {
                                 final child = parentChildren[index];
-                                                                 return Container(
-                                   padding: const EdgeInsets.all(8),
-                                   decoration: BoxDecoration(
-                                     color: Colors.grey[50],
-                                     borderRadius: BorderRadius.circular(10),
-                                     border: Border.all(
-                                       color: Colors.grey[200]!,
-                                       width: 1,
-                                     ),
-                                   ),
-                                                                     child: Row(
-                                     children: [
-                                       // Avatar
-                                       Container(
-                                         width: 45,
-                                         height: 45,
-                                         decoration: BoxDecoration(
-                                           color: AppTheme.primaryColor.withOpacity(0.1),
-                                           shape: BoxShape.circle,
-                                         ),
-                                         child: Center(
-                                           child: Text(
-                                             child.name[0],
-                                             style: TextStyle(
-                                               fontSize: 18,
-                                               fontWeight: FontWeight.bold,
-                                               color: AppTheme.primaryColor,
-                                             ),
-                                           ),
-                                         ),
-                                       ),
-                                       const SizedBox(width: 10),
-                                       // Child info
-                                       Expanded(
-                                         child: Column(
-                                           crossAxisAlignment: CrossAxisAlignment.start,
-                                           children: [
-                                             Text(
-                                               child.name,
-                                               style: const TextStyle(
-                                                 fontSize: 15,
-                                                 fontWeight: FontWeight.bold,
-                                               ),
-                                               overflow: TextOverflow.ellipsis,
-                                               maxLines: 1,
-                                             ),
-                                             const SizedBox(height: 3),
-                                             Text(
-                                               'العمر: ${child.age} سنة',
-                                               style: TextStyle(
-                                                 fontSize: 13,
-                                                 color: Colors.grey[600],
-                                               ),
-                                               overflow: TextOverflow.ellipsis,
-                                               maxLines: 1,
-                                             ),
-                                             const SizedBox(height: 3),
-                                             Row(
-                                               children: [
-                                                 Icon(
-                                                   child.isApproved
-                                                       ? Icons.check_circle
-                                                       : Icons.pending,
-                                                   size: 14,
-                                                   color: child.isApproved
-                                                       ? AppTheme.successColor
-                                                       : AppTheme.warningColor,
-                                                 ),
-                                                 const SizedBox(width: 4),
-                                                 Flexible(
-                                                   child: Text(
-                                                     child.isApproved ? 'موافق عليه' : 'في انتظار الموافقة',
-                                                     style: TextStyle(
-                                                       fontSize: 11,
-                                                       color: child.isApproved
-                                                           ? AppTheme.successColor
-                                                           : AppTheme.warningColor,
-                                                       fontWeight: FontWeight.w500,
-                                                     ),
-                                                     overflow: TextOverflow.ellipsis,
-                                                     maxLines: 1,
-                                                   ),
-                                                 ),
-                                               ],
-                                             ),
-                                           ],
-                                         ),
-                                       ),
-                                                                             // Actions
-                                       SizedBox(
-                                         width: 120, // Fixed width to prevent overflow
-                                         child: Row(
-                                           mainAxisAlignment: MainAxisAlignment.end,
-                                           children: [
-                                             // Edit button
-                                             Container(
-                                               width: 32,
-                                               height: 32,
-                                               decoration: BoxDecoration(
-                                                 color: AppTheme.primaryColor.withOpacity(0.1),
-                                                 borderRadius: BorderRadius.circular(6),
-                                               ),
-                                               child: IconButton(
-                                                 onPressed: () => _showEditChildDialog(child),
-                                                 icon: const Icon(Icons.edit, size: 16),
-                                                 color: AppTheme.primaryColor,
-                                                 tooltip: 'تعديل',
-                                                 padding: EdgeInsets.zero,
-                                                 constraints: const BoxConstraints(
-                                                   minWidth: 32,
-                                                   minHeight: 32,
-                                                 ),
-                                               ),
-                                             ),
-                                             const SizedBox(width: 2),
-                                             // Approve/Reject button
-                                             if (!child.isApproved)
-                                               Container(
-                                                 width: 32,
-                                                 height: 32,
-                                                 decoration: BoxDecoration(
-                                                   color: AppTheme.successColor.withOpacity(0.1),
-                                                   borderRadius: BorderRadius.circular(6),
-                                                 ),
-                                                 child: IconButton(
-                                                   onPressed: () => _approveChild(child),
-                                                   icon: const Icon(Icons.check_circle_outline, size: 16),
-                                                   color: AppTheme.successColor,
-                                                   tooltip: 'موافقة',
-                                                   padding: EdgeInsets.zero,
-                                                   constraints: const BoxConstraints(
-                                                     minWidth: 32,
-                                                     minHeight: 32,
-                                                   ),
-                                                 ),
-                                               )
-                                             else
-                                               Container(
-                                                 width: 32,
-                                                 height: 32,
-                                                 decoration: BoxDecoration(
-                                                   color: AppTheme.warningColor.withOpacity(0.1),
-                                                   borderRadius: BorderRadius.circular(6),
-                                                 ),
-                                                 child: IconButton(
-                                                   onPressed: () => _rejectChild(child),
-                                                   icon: const Icon(Icons.cancel_outlined, size: 16),
-                                                   color: AppTheme.warningColor,
-                                                   tooltip: 'رفض',
-                                                   padding: EdgeInsets.zero,
-                                                   constraints: const BoxConstraints(
-                                                     minWidth: 32,
-                                                     minHeight: 32,
-                                                   ),
-                                                 ),
-                                               ),
-                                             const SizedBox(width: 2),
-                                             // Delete button
-                                             Container(
-                                               width: 32,
-                                               height: 32,
-                                               decoration: BoxDecoration(
-                                                 color: AppTheme.errorColor.withOpacity(0.1),
-                                                 borderRadius: BorderRadius.circular(6),
-                                               ),
-                                               child: IconButton(
-                                                 onPressed: () => _showDeleteChildConfirmation(child),
-                                                 icon: const Icon(Icons.delete, size: 16),
-                                                 color: AppTheme.errorColor,
-                                                 tooltip: 'حذف',
-                                                 padding: EdgeInsets.zero,
-                                                 constraints: const BoxConstraints(
-                                                   minWidth: 32,
-                                                   minHeight: 32,
-                                                 ),
-                                               ),
-                                             ),
-                                           ],
-                                         ),
-                                       ),
+                                return Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: Colors.grey[200]!,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // Avatar
+                                      Container(
+                                        width: 45,
+                                        height: 45,
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryColor
+                                              .withOpacity(0.1),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            child.name[0],
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppTheme.primaryColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      // Child info
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              child.name,
+                                              style: const TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                            ),
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              'العمر: ${child.age} سنة',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.grey[600],
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                            ),
+                                            const SizedBox(height: 3),
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  child.isApproved
+                                                      ? Icons.check_circle
+                                                      : Icons.pending,
+                                                  size: 14,
+                                                  color: child.isApproved
+                                                      ? AppTheme.successColor
+                                                      : AppTheme.warningColor,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Flexible(
+                                                  child: Text(
+                                                    child.isApproved
+                                                        ? 'موافق عليه'
+                                                        : 'في انتظار الموافقة',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: child.isApproved
+                                                          ? AppTheme
+                                                                .successColor
+                                                          : AppTheme
+                                                                .warningColor,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 1,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      // Actions
+                                      SizedBox(
+                                        width:
+                                            120, // Fixed width to prevent overflow
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.end,
+                                          children: [
+                                            // Edit button
+                                            Container(
+                                              width: 32,
+                                              height: 32,
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.primaryColor
+                                                    .withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: IconButton(
+                                                onPressed: () =>
+                                                    _showEditChildDialog(child),
+                                                icon: const Icon(
+                                                  Icons.edit,
+                                                  size: 16,
+                                                ),
+                                                color: AppTheme.primaryColor,
+                                                tooltip: 'تعديل',
+                                                padding: EdgeInsets.zero,
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 32,
+                                                      minHeight: 32,
+                                                    ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 2),
+                                            // Approve/Reject button
+                                            if (!child.isApproved)
+                                              Container(
+                                                width: 32,
+                                                height: 32,
+                                                decoration: BoxDecoration(
+                                                  color: AppTheme.successColor
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                child: IconButton(
+                                                  onPressed: () =>
+                                                      _approveChild(child),
+                                                  icon: const Icon(
+                                                    Icons.check_circle_outline,
+                                                    size: 16,
+                                                  ),
+                                                  color: AppTheme.successColor,
+                                                  tooltip: 'موافقة',
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                        minWidth: 32,
+                                                        minHeight: 32,
+                                                      ),
+                                                ),
+                                              )
+                                            else
+                                              Container(
+                                                width: 32,
+                                                height: 32,
+                                                decoration: BoxDecoration(
+                                                  color: AppTheme.warningColor
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                child: IconButton(
+                                                  onPressed: () =>
+                                                      _rejectChild(child),
+                                                  icon: const Icon(
+                                                    Icons.cancel_outlined,
+                                                    size: 16,
+                                                  ),
+                                                  color: AppTheme.warningColor,
+                                                  tooltip: 'رفض',
+                                                  padding: EdgeInsets.zero,
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                        minWidth: 32,
+                                                        minHeight: 32,
+                                                      ),
+                                                ),
+                                              ),
+                                            const SizedBox(width: 2),
+                                            // Delete button
+                                            Container(
+                                              width: 32,
+                                              height: 32,
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.errorColor
+                                                    .withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: IconButton(
+                                                onPressed: () =>
+                                                    _showDeleteChildConfirmation(
+                                                      child,
+                                                    ),
+                                                icon: const Icon(
+                                                  Icons.delete,
+                                                  size: 16,
+                                                ),
+                                                color: AppTheme.errorColor,
+                                                tooltip: 'حذف',
+                                                padding: EdgeInsets.zero,
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 32,
+                                                      minHeight: 32,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 );
@@ -1361,7 +1387,6 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
   void _showAddChildDialog(AppUser parent) {
     final nameController = TextEditingController();
     final ageController = TextEditingController();
-    
 
     showDialog(
       context: context,
@@ -1390,7 +1415,6 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
                   ),
                   keyboardType: TextInputType.number,
                 ),
-               
               ],
             ),
           ),
@@ -1654,7 +1678,8 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
       context: context,
       type: QuickAlertType.warning,
       title: 'تأكيد الحذف',
-      text: 'هل أنت متأكد من حذف الطالب ${child.name}؟\nلا يمكن التراجع عن هذا الإجراء.',
+      text:
+          'هل أنت متأكد من حذف الطالب ${child.name}؟\nلا يمكن التراجع عن هذا الإجراء.',
       confirmBtnText: 'حذف',
       cancelBtnText: 'إلغاء',
       onCancelBtnTap: () => Navigator.pop(context),
