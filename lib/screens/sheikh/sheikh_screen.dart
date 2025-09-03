@@ -4,7 +4,10 @@ import 'package:hidaya/controllers/auth_controller.dart';
 import 'package:hidaya/models/user_model.dart';
 import 'package:hidaya/utils/constants.dart';
 import 'package:hidaya/utils/app_theme.dart';
-import 'package:hidaya/providers/firebase_providers.dart';
+import 'pages/home_page.dart';
+import 'pages/students_page.dart';
+import 'pages/tasks_page.dart';
+
 
 class SheikhScreen extends ConsumerStatefulWidget {
   const SheikhScreen({super.key});
@@ -19,7 +22,6 @@ class _SheikhScreenState extends ConsumerState<SheikhScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-    
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -259,457 +261,22 @@ class _SheikhScreenState extends ConsumerState<SheikhScreen> {
   }
 
   Widget _buildBody() {
+    final authState = ref.watch(authControllerProvider);
+    final sheikhId = authState?.id;
+    if (sheikhId == null) return const SizedBox.shrink();
     switch (_currentIndex) {
       case 0:
-        return _buildHomeTab();
+        return SheikhHomePage(sheikhId: sheikhId);
       case 1:
-        return _buildStudentsTab();
+        return SheikhStudentsPage(sheikhId: sheikhId);
       case 2:
-        return _buildAttendanceTab();
-      case 3:
-        return _buildTasksTab();
+        return SheikhTasksPage(sheikhId: sheikhId);
       default:
-        return _buildHomeTab();
+        return SheikhHomePage(sheikhId: sheikhId);
     }
   }
 
-  Widget _buildHomeTab() {
-    return CustomScrollView(
-      slivers: [
-        // Welcome Header
-        SliverToBoxAdapter(
-          child: _buildWelcomeHeader(),
-        ),
-        
-        // Quick Stats
-        SliverToBoxAdapter(
-          child: _buildQuickStats(),
-        ),
-        
-        // Today's Schedule
-        SliverToBoxAdapter(
-          child: _buildTodaySchedule(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWelcomeHeader() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'مرحباً بك في هداية',
-                      style: AppTheme.islamicTitleStyle.copyWith(
-                        color: Colors.white,
-                        fontSize: 24,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'أدير فصولك التعليمية بكل سهولة',
-                      style: AppTheme.arabicTextStyle.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickStats() {
-    final authState = ref.watch(authControllerProvider);
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'ملخص سريع',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppTheme.primaryColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (authState == null)
-            const SizedBox.shrink()
-          else
-            Consumer(
-              builder: (context, ref, _) {
-                final asyncStats = ref.watch(sheikhHomeStatsProvider(authState.id));
-                return asyncStats.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  error: (e, st) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Text('تعذر تحميل الإحصائيات'),
-                  ),
-                  data: (stats) => Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatCard(
-                              'إجمالي الطلاب',
-                              '${stats['totalStudents'] ?? 0}',
-                              Icons.school,
-                              AppTheme.primaryColor,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildStatCard(
-                              'عدد المجموعات',
-                              '${stats['groupsCount'] ?? 0}',
-                              Icons.groups,
-                              AppTheme.successColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatCard(
-                              'تكليفات نشطة',
-                              '${stats['activeAssignments'] ?? 0}',
-                              Icons.task_alt,
-                              AppTheme.infoColor,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildStatCard(
-                              'نتائج مكتملة',
-                              '${stats['completedResults'] ?? 0}',
-                              Icons.check_circle,
-                              AppTheme.warningColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 24,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTodaySchedule() {
-    final authState = ref.watch(authControllerProvider);
-    return Container(
-      margin: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'جدول اليوم',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: AppTheme.primaryColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (authState == null)
-            const SizedBox.shrink()
-          else
-            Consumer(
-              builder: (context, ref, _) {
-                final asyncGroups = ref.watch(sheikhTodayGroupsProvider(authState.id));
-                return asyncGroups.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  error: (e, st) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Text('تعذر تحميل الجدول'),
-                  ),
-                  data: (groups) {
-                    if (groups.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          'لا توجد حصص اليوم',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                        ),
-                      );
-                    }
-                    return Column(
-                      children: groups.map((g) {
-                        // Try to pick first time slot of today's schedule for display
-                        final today = g.days.isNotEmpty ? g.days.first : g.days.first;
-                        final time = today.timeSlots.isNotEmpty
-                            ? '${today.timeSlots.first.startTime} - ${today.timeSlots.first.endTime}'
-                            : '';
-                        return _buildScheduleCard(
-                          time.isEmpty ? '—' : time,
-                          'المجموعة',
-                          g.name,
-                          Icons.groups,
-                          AppTheme.primaryColor,
-                        );
-                      }).toList(),
-                    );
-                  },
-                );
-              },
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScheduleCard(String time, String subject, String group, IconData icon, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      subject,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      group,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      time,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.grey[400],
-                size: 16,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStudentsTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.school_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'قائمة الطلاب',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'سيتم عرض قائمة الطلاب هنا',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAttendanceTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'تسجيل الحضور',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'سيتم عرض تسجيل الحضور هنا',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTasksTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.task_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'إدارة المهام',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'سيتم عرض إدارة المهام هنا',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  
   Widget _buildBottomNavigationBar() {
     return Container(
       decoration: BoxDecoration(
@@ -744,10 +311,6 @@ class _SheikhScreenState extends ConsumerState<SheikhScreen> {
             label: 'الطلاب',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.check_circle),
-            label: 'الحضور',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.task),
             label: 'المهام',
           ),
@@ -763,8 +326,6 @@ class _SheikhScreenState extends ConsumerState<SheikhScreen> {
       case 1:
         return 'الطلاب';
       case 2:
-        return 'الحضور';
-      case 3:
         return 'المهام';
       default:
         return 'الرئيسية';

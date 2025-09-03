@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../models/category_model.dart';
 import '../models/task_model.dart';
+import '../models/task_result_model.dart';
 import '../models/child_model.dart';
 import '../models/assignment_model.dart';
 import '../models/schedule_group_model.dart';
@@ -214,23 +215,80 @@ class FirebaseService {
 
   // ==================== TASK RESULTS MANAGEMENT ====================
   
-  Future<void> submitTaskResult(String childId, String taskId, int points, String? notes) async {
-    await _results.add({
+  Future<void> submitTaskResult(
+    String childId,
+    String taskId,
+    int points,
+    String? notes, {
+    String? dateISO,
+    String? groupId,
+    String? categoryId,
+    String? sheikhId,
+    String? taskTitle,
+    String? taskType,
+    int? maxPoints,
+  }) async {
+    final String date = dateISO ?? DateTime.now().toIso8601String().substring(0, 10);
+
+    // Upsert behavior: if a result exists for the same child, task, and date, update it; otherwise create.
+    final existingSnap = await _results
+        .where('childId', isEqualTo: childId)
+        .where('taskId', isEqualTo: taskId)
+        .where('date', isEqualTo: date)
+        .limit(1)
+        .get();
+
+    final data = {
       'childId': childId,
       'taskId': taskId,
       'points': points,
       'notes': notes,
+      'date': date,
+      'groupId': groupId,
+      'categoryId': categoryId,
+      'sheikhId': sheikhId,
+      'taskTitle': taskTitle,
+      'taskType': taskType,
+      'maxPoints': maxPoints,
       'submittedAt': FieldValue.serverTimestamp(),
-    });
+    };
+
+    if (existingSnap.docs.isNotEmpty) {
+      await existingSnap.docs.first.reference.update(data);
+    } else {
+      await _results.add(data);
+    }
   }
 
-  Future<List<Map<String, dynamic>>> getTaskResultsByChild(String childId) async {
+  Future<List<TaskResultModel>> getTaskResultsByChild(String childId) async {
     final snapshot = await _results
         .where('childId', isEqualTo: childId)
         .orderBy('submittedAt', descending: true)
         .get();
-    
-    return snapshot.docs.map((doc) => doc.data()).toList();
+    return snapshot.docs
+        .map((doc) => TaskResultModel.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>))
+        .toList();
+  }
+
+  Future<Map<String, TaskResultModel>> getTodayResultsByChildAndTask(String childId) async {
+    final String today = DateTime.now().toIso8601String().substring(0, 10);
+    final snapshot = await _results
+        .where('childId', isEqualTo: childId)
+        .where('date', isEqualTo: today)
+        .get();
+    final Map<String, TaskResultModel> byTaskId = {};
+    for (final doc in snapshot.docs) {
+      final model = TaskResultModel.fromFirestore(doc as DocumentSnapshot<Map<String, dynamic>>);
+      byTaskId[model.taskId] = model;
+    }
+    return byTaskId;
+  }
+
+  // Helper: get task by id for metadata (type/maxPoints)
+  Future<TaskModel?> getTaskById(String taskId) async {
+    final doc = await _tasks.doc(taskId).get();
+    if (!doc.exists) return null;
+    return TaskModel.fromFirestore(doc);
   }
 
   // ==================== STATISTICS ====================

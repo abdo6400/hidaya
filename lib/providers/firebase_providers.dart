@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/firebase_service.dart';
 import '../models/user_model.dart';
 import '../models/child_model.dart';
-import '../models/task_model.dart';
 import '../models/schedule_group_model.dart';
+import '../models/task_model.dart';
 
 // Firebase service provider
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
@@ -64,6 +64,12 @@ final sheikhTodayGroupsProvider = FutureProvider.family<List<ScheduleGroupModel>
   return await firebaseService.getTodayScheduleGroupsForSheikh(sheikhId);
 });
 
+// All schedule groups for a sheikh
+final sheikhGroupsProvider = FutureProvider.family<List<ScheduleGroupModel>, String>((ref, sheikhId) async {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  return await firebaseService.getScheduleGroupsBySheikh(sheikhId);
+});
+
 // Group students provider
 final childrenInGroupProvider = FutureProvider.family<List<ChildModel>, String>((ref, groupId) async {
   final firebaseService = ref.read(firebaseServiceProvider);
@@ -80,4 +86,15 @@ final attendanceByGroupAndDateProvider = FutureProvider.family< Map<String, Stri
 final childTasksProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, childId) async {
   final firebaseService = ref.read(firebaseServiceProvider);
   return await firebaseService.getChildTasks(childId);
+});
+
+// Tasks available for a group: category-specific + global (categoryId == null)
+final tasksForGroupProvider = FutureProvider.family<List<TaskModel>, String>((ref, groupId) async {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  final group = await firebaseService.getScheduleGroupById(groupId);
+  if (group == null) return [];
+  final all = await firebaseService.getAllTasks();
+  final List<TaskModel> categoryTasks = all.where((t) => t.categoryId == group.categoryId).toList();
+  final List<TaskModel> globalTasks = all.where((t) => t.categoryId == null || (t.categoryId != null && t.categoryId!.isEmpty)).toList();
+  return [...categoryTasks, ...globalTasks];
 });
