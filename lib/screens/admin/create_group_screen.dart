@@ -274,6 +274,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 final isSelected = _selectedDays.contains(day);
                 return FilterChip(
                   label: Text(_getDayName(day)),
+                  selectedColor: Theme.of(context).colorScheme.secondary,
                   selected: isSelected,
                   onSelected: (selected) {
                     setState(() {

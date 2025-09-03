@@ -6,6 +6,9 @@ import 'package:hidaya/providers/firebase_providers.dart';
 import 'package:hidaya/widgets/loading_indicator.dart';
 import 'package:hidaya/widgets/error_widget.dart' as app_error;
 
+import '../../../models/child_model.dart';
+import '../../../models/task_result_model.dart';
+
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
 
@@ -29,7 +32,16 @@ class HomeTab extends ConsumerWidget {
         ),
 
         // Recent Activities
-        SliverToBoxAdapter(child: _buildRecentActivities(context)),
+        SliverToBoxAdapter(
+          child: Consumer(
+            builder: (context, ref, child) {
+              final authState = ref.watch(authControllerProvider);
+              return authState != null
+                  ? _buildRecentActivities(context, ref, authState.id)
+                  : const LoadingIndicator();
+            },
+          ),
+        ),
       ],
     );
   }
@@ -96,7 +108,11 @@ class HomeTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickStats(BuildContext context, WidgetRef ref, String parentId) {
+  Widget _buildQuickStats(
+    BuildContext context,
+    WidgetRef ref,
+    String parentId,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -141,39 +157,6 @@ class HomeTab extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Expanded(
-                                child: _buildStatCard(
-                                  context,
-                                  'الأبناء المعتمدين',
-                                  '$approvedChildren',
-                                  Icons.check_circle,
-                                  AppTheme.successColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildStatCard(
-                                  context,
-                                  'في انتظار الاعتماد',
-                                  '$pendingChildren',
-                                  Icons.pending,
-                                  AppTheme.warningColor,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _buildStatCard(
-                                  context,
-                                  'المحفظين',
-                                  '${stats['totalSheikhs'] ?? 0}',
-                                  Icons.person,
-                                  AppTheme.infoColor,
-                                ),
-                              ),
                             ],
                           ),
                         ],
@@ -222,17 +205,32 @@ class HomeTab extends ConsumerWidget {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 24),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
           Text(
             value,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -240,23 +238,16 @@ class HomeTab extends ConsumerWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentActivities(BuildContext context) {
+  Widget _buildRecentActivities(
+    BuildContext context,
+    WidgetRef ref,
+    String parentId,
+  ) {
     return Container(
       margin: const EdgeInsets.all(16),
       child: Column(
@@ -270,26 +261,79 @@ class HomeTab extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // For now, showing static activities. In the future, this should come from Firebase
-          _buildActivityCard(
-            context,
-            'تم إكمال مهمة حفظ سورة الفاتحة',
-            'أحمد محمد',
-            'منذ ساعتين',
-            Icons.task_alt,
-            AppTheme.successColor,
-          ),
-          _buildActivityCard(
-            context,
-            'حضور درس التلاوة',
-            'فاطمة أحمد',
-            'منذ 3 ساعات',
-            Icons.school,
-            AppTheme.infoColor,
+          Consumer(
+            builder: (context, ref, child) {
+              final childrenAsync = ref.watch(
+                childrenByParentProvider(parentId),
+              );
+              return childrenAsync.when(
+                data: (children) {
+                  if (children.isEmpty) {
+                    return const Text('لا يوجد أبناء مسجلين');
+                  }
+                  // Gather all today's results
+                  final today = DateTime.now();
+                  final List<_Activity> activities = [];
+                  for (final child in children) {
+                    final resultsAsync = ref.watch(
+                      taskResultsByChildProvider(child.id),
+                    );
+                    resultsAsync.whenData((results) {
+                      for (final result in results) {
+                        final date = result.submittedAt;
+                        if (date != null &&
+                            date.year == today.year &&
+                            date.month == today.month &&
+                            date.day == today.day) {
+                          activities.add(_Activity(child, result));
+                        }
+                      }
+                    });
+                  }
+                  if (activities.isEmpty) {
+                    return const Text('لا توجد مهام مكتملة اليوم');
+                  }
+                  // Sort by time descending
+                  activities.sort(
+                    (a, b) =>
+                        b.result.submittedAt!.compareTo(a.result.submittedAt!),
+                  );
+                  // Show up to 5
+                  return Column(
+                    children: activities.take(5).map((activity) {
+                      return _buildActivityCard(
+                        context,
+                        'تم إكمال مهمة ${activity.result.taskTitle ?? 'غير محددة'}',
+                        activity.child.name,
+                        _getTimeAgo(activity.result.submittedAt!),
+                        Icons.task_alt,
+                        AppTheme.successColor,
+                      );
+                    }).toList(),
+                  );
+                },
+                loading: () => const LoadingIndicator(),
+                error: (error, stack) => app_error.AsyncErrorWidget(
+                  error: error,
+                  stackTrace: stack,
+                  onRetry: () =>
+                      ref.refresh(childrenByParentProvider(parentId)),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
+    if (diff.inMinutes < 1) return 'الآن';
+    if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} دقيقة';
+    if (diff.inHours < 24) return 'منذ ${diff.inHours} ساعة';
+    return 'منذ ${diff.inDays} يوم';
   }
 
   Widget _buildActivityCard(
@@ -355,4 +399,10 @@ class HomeTab extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _Activity {
+  final ChildModel child;
+  final TaskResultModel result;
+  _Activity(this.child, this.result);
 }

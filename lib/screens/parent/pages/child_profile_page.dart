@@ -21,116 +21,25 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
   String _searchQuery = '';
   String _selectedGroupId = '';
   DateTime? _selectedDate;
+  String? _selectedTaskType;
   String _sortBy = 'date';
   bool _sortAscending = false;
+  int _currentViewIndex = 0; // 0: List View, 1: Daily Table View
 
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text('ملف ${widget.child.name}'),
-          elevation: 0,
-        ),
+        appBar: AppBar(title: Text('${widget.child.name}'), elevation: 0),
         body: Column(
           children: [
-            // Child Info Header
-            _buildChildHeader(),
-            
             // Filters Section
             _buildFiltersSection(),
-            
-            // Task Results List
-            Expanded(
-              child: _buildTaskResultsList(),
-            ),
+            // Content based on selected view
+            Expanded(child: _buildDailyResultsTable()),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildChildHeader() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: Colors.white, width: 3),
-            ),
-            child: Center(
-              child: Text(
-                widget.child.name[0].toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.child.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'العمر: ${widget.child.age} سنة',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      widget.child.isApproved ? Icons.check_circle : Icons.pending,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.child.isApproved ? 'معتمد' : 'في انتظار الاعتماد',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -170,27 +79,10 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
               fillColor: Colors.grey[100],
             ),
           ),
-          const SizedBox(height: 16),
-          
-          // Filters Row
-          Row(
-            children: [
-              // Group Filter
-              Expanded(
-                child: _buildGroupFilter(),
-              ),
-              const SizedBox(width: 12),
-              
-              // Date Filter
-              Expanded(
-                child: _buildDateFilter(),
-              ),
-              const SizedBox(width: 12),
-              
-              // Sort Button
-              _buildSortButton(),
-            ],
-          ),
+          const SizedBox(height: 10),
+          _buildGroupFilter(),
+          const SizedBox(height: 10),
+          _buildDateFilter(),
         ],
       ),
     );
@@ -199,10 +91,27 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
   Widget _buildGroupFilter() {
     return Consumer(
       builder: (context, ref, child) {
-        final groupsAsync = ref.watch(allScheduleGroupsProvider);
-        
+        final groupsAsync = ref.watch(
+          scheduleGroupsByChildProvider(widget.child.id),
+        );
+
         return groupsAsync.when(
           data: (groups) {
+            if (groups.isEmpty) {
+              return Container(
+                height: 56,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[300]!),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(child: Text('لا توجد مجموعات مسجلة')),
+              );
+            }
+
             return DropdownButtonFormField<String>(
               value: _selectedGroupId.isEmpty ? null : _selectedGroupId,
               decoration: InputDecoration(
@@ -210,17 +119,22 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
               items: [
                 const DropdownMenuItem<String>(
                   value: '',
                   child: Text('جميع المجموعات'),
                 ),
-                ...groups.map((group) => DropdownMenuItem<String>(
-                  value: group.id,
-                  child: Text(group.name),
-                )),
+                ...groups.map(
+                  (group) => DropdownMenuItem<String>(
+                    value: group.id,
+                    child: Text(group.name),
+                  ),
+                ),
               ],
               onChanged: (value) {
                 setState(() {
@@ -291,123 +205,6 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
     );
   }
 
-  Widget _buildSortButton() {
-    return PopupMenuButton<String>(
-      onSelected: (value) {
-        setState(() {
-          _sortBy = value;
-          _sortAscending = value != 'date'; // Date defaults to descending, others to ascending
-        });
-      },
-      itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: 'date',
-          child: Text('التاريخ'),
-        ),
-        const PopupMenuItem(
-          value: 'points',
-          child: Text('النقاط (الأعلى أولاً)'),
-        ),
-        const PopupMenuItem(
-          value: 'task',
-          child: Text('اسم المهمة'),
-        ),
-      ],
-      child: Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.sort, size: 20),
-            const SizedBox(width: 8),
-            Text(_getSortLabel()),
-            const Icon(Icons.arrow_drop_down),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getSortLabel() {
-    switch (_sortBy) {
-      case 'date':
-        return 'التاريخ';
-      case 'points':
-        return 'النقاط';
-      case 'task':
-        return 'المهمة';
-      default:
-        return 'ترتيب';
-    }
-  }
-
-  Widget _buildTaskResultsList() {
-    return Consumer(
-      builder: (context, ref, child) {
-        final taskResultsAsync = ref.watch(
-          taskResultsByChildProvider(widget.child.id),
-        );
-
-        return taskResultsAsync.when(
-          data: (taskResults) {
-            final filteredResults = _filterAndSortResults(taskResults);
-            
-            if (filteredResults.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.assignment_outlined,
-                      size: 80,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'لا توجد نتائج مهام',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'لم يتم تسجيل أي نتائج مهام بعد',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: filteredResults.length,
-              itemBuilder: (context, index) {
-                final result = filteredResults[index];
-                return _buildTaskResultCard(result);
-              },
-            );
-          },
-          loading: () => const LoadingIndicator(),
-          error: (error, stack) => app_error.AsyncErrorWidget(
-            error: error,
-            stackTrace: stack,
-            onRetry: () => ref.refresh(
-              taskResultsByChildProvider(widget.child.id),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   List<TaskResultModel> _filterAndSortResults(List<TaskResultModel> results) {
     var filtered = results.where((result) {
       // Search filter
@@ -436,13 +233,18 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
         }
       }
 
+      // Task type filter
+      if (_selectedTaskType != null && result.taskType != _selectedTaskType) {
+        return false;
+      }
+
       return true;
     }).toList();
 
     // Sort results
     filtered.sort((a, b) {
       int comparison = 0;
-      
+
       switch (_sortBy) {
         case 'date':
           final aDate = a.submittedAt ?? DateTime(1970);
@@ -458,124 +260,407 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
           comparison = aTitle.compareTo(bTitle);
           break;
       }
-      
+
       return _sortAscending ? comparison : -comparison;
     });
 
     return filtered;
   }
 
-  Widget _buildTaskResultCard(TaskResultModel result) {
+  Widget _buildDailyResultsTable() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final resultsAsync = ref.watch(
+          taskResultsByChildProvider(widget.child.id),
+        );
+
+        return resultsAsync.when(
+          data: (results) {
+            final filteredResults = _filterAndSortResults(results);
+            final dailyResults = _groupResultsByDay(filteredResults);
+
+            if (dailyResults.isEmpty) {
+              return const Center(child: Text('لا توجد نتائج لعرضها'));
+            }
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Table Header
+                  _buildTableHeader(),
+                  const SizedBox(height: 8),
+                  // Daily Rows
+                  ...dailyResults.entries.map(
+                    (entry) => _buildDailyRow(entry.key, entry.value),
+                  ),
+                ],
+              ),
+            );
+          },
+          loading: () => const LoadingIndicator(),
+          error: (error, stack) => app_error.AsyncErrorWidget(
+            error: error,
+            stackTrace: stack,
+            onRetry: () =>
+                ref.refresh(taskResultsByChildProvider(widget.child.id)),
+          ),
+        );
+      },
+    );
+  }
+
+  Map<String, List<TaskResultModel>> _groupResultsByDay(
+    List<TaskResultModel> results,
+  ) {
+    final dailyResults = <String, List<TaskResultModel>>{};
+
+    for (final result in results) {
+      if (result.submittedAt != null) {
+        final dateKey = _formatDateForTable(result.submittedAt!);
+        dailyResults.putIfAbsent(dateKey, () => []).add(result);
+      }
+    }
+
+    // Sort days in descending order (most recent first)
+    final sortedDays = dailyResults.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    final sortedDailyResults = <String, List<TaskResultModel>>{};
+    for (final day in sortedDays) {
+      sortedDailyResults[day] = dailyResults[day]!;
+    }
+
+    return sortedDailyResults;
+  }
+
+  String _formatDateForTable(DateTime date) {
+    const arabicDays = [
+      'الأحد',
+      'الاثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+    ];
+
+    final dayName = arabicDays[date.weekday % 7];
+    final dateStr = '${date.day}/${date.month}/${date.year}';
+
+    return '$dayName - $dateStr';
+  }
+
+  Widget _buildTableHeader() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+        color: AppTheme.primaryColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.primaryColor.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Date column
+          Expanded(
+            flex: 2,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'التاريخ',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          // Task column
+          Expanded(
+            flex: 3,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Text(
+                'المهمة',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          // Result column
+          Expanded(
+            flex: 2,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Text(
+                'النتيجة',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Row
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    result.taskTitle ?? 'مهمة غير محددة',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _getPointsColor(result.points).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: _getPointsColor(result.points).withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.stars,
-                        color: _getPointsColor(result.points),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${result.points}',
-                        style: TextStyle(
-                          color: _getPointsColor(result.points),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            
-            // Task Details
-            if (result.notes?.isNotEmpty == true) ...[
-              Text(
-                'ملاحظات: ${result.notes}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+    );
+  }
+
+  Widget _buildDailyRow(String dateKey, List<TaskResultModel> dayResults) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Date header row
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
               ),
-              const SizedBox(height: 8),
-            ],
-            
-            // Footer Row
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Colors.grey[500],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  result.submittedAt != null 
-                    ? _formatDate(result.submittedAt!)
-                    : 'غير محدد',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[500],
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  Icons.access_time,
-                  size: 16,
-                  color: Colors.grey[500],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  result.submittedAt != null 
-                    ? _formatTime(result.submittedAt!)
-                    : 'غير محدد',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
             ),
-          ],
-        ),
+            child: Text(
+              dateKey,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          // Task results for this day
+          ...dayResults.map((result) => _buildTaskResultRow(result)),
+        ],
       ),
     );
+  }
+
+  Widget _buildTaskResultRow(TaskResultModel result) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.grey[200]!, width: 1)),
+      ),
+      child: Row(
+        children: [
+          // Task title
+          Expanded(
+            flex: 2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    result.taskTitle ?? 'مهمة غير محددة',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Result display
+          Expanded(child: _buildResultDisplay(result)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultDisplay(TaskResultModel result) {
+    switch (result.taskType) {
+      case 'points':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                _getPointsColor(result.points).withOpacity(0.2),
+                _getPointsColor(result.points).withOpacity(0.1),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _getPointsColor(result.points).withOpacity(0.4),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _getPointsColor(result.points).withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.stars,
+                color: _getPointsColor(result.points),
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${result.points}',
+                style: TextStyle(
+                  color: _getPointsColor(result.points),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              if (result.maxPoints != null) ...[
+                Text(
+                  ' / ${result.maxPoints}',
+                  style: TextStyle(
+                    color: _getPointsColor(result.points).withOpacity(0.7),
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+
+      case 'yesno':
+        final isYes = result.points == 2;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isYes
+                  ? [Colors.green[400]!, Colors.green[600]!]
+                  : [Colors.red[400]!, Colors.red[600]!],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: (isYes ? Colors.green : Colors.red).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isYes ? Icons.check_circle : Icons.cancel,
+                color: Colors.white,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isYes ? 'نعم' : 'لا',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case 'custom':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.orange[400]!, Colors.orange[600]!],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orange.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                result.notes ?? "",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        );
+
+      default:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.grey.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.help_outline, color: Colors.grey[600], size: 18),
+              const SizedBox(width: 6),
+              Text(
+                'غير محدد',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        );
+    }
   }
 
   Color _getPointsColor(int points) {

@@ -65,7 +65,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen>
         child: Scaffold(
           backgroundColor: AppTheme.backgroundColor,
           appBar: _buildAppBar(),
-          drawer: _buildDrawer(authState),
+         // drawer: _buildDrawer(authState),
           body: _buildBody(),
           bottomNavigationBar: _buildBottomNavigationBar(),
         ),
@@ -100,20 +100,13 @@ class _AdminScreenState extends ConsumerState<AdminScreen>
           decoration: BoxDecoration(
             color: AppTheme.primaryColor,
             borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
+           
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(100),
             child: Image.asset(
               'assets/icons/logo.png',
-              width: 50,
-              height: 60,
+             
               fit: BoxFit.fill,
             ),
           ),

@@ -91,3 +91,9 @@ final taskResultsByChildProvider = FutureProvider.family<List<TaskResultModel>, 
   final firebaseService = ref.read(firebaseServiceProvider);
   return await firebaseService.getTaskResultsByChild(childId);
 });
+
+// Schedule groups by child provider
+final scheduleGroupsByChildProvider = FutureProvider.family<List<ScheduleGroupModel>, String>((ref, childId) async {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  return await firebaseService.getScheduleGroupsByChild(childId);
+});

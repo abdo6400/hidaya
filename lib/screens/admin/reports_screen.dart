@@ -15,7 +15,9 @@ class ReportsScreen extends ConsumerStatefulWidget {
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   String? _selectedGroupId;
+  DateTimeRange? _selectedDateRange;
   DateTime? _selectedDate;
+  String _dateFilterType = 'all'; // 'all', 'day', 'range', 'week', 'month'
   String _sortBy = 'points'; // 'name', 'points', 'group'
   bool _sortAscending = false; // false = descending (higher points first)
   String _searchQuery = '';
@@ -193,44 +195,108 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _buildDateFilter() {
-    return InkWell(
-      onTap: _selectDate,
-      child: Container(
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _selectedDate != null
-                    ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                    : 'جميع التواريخ',
-                style: TextStyle(
-                  color: _selectedDate != null
-                      ? Colors.black
-                      : Colors.grey[600],
-                  fontSize: 14,
-                ),
+    return Row(
+      children: [
+        Expanded(
+          child: InkWell(
+            onTap: () async {
+              final picked = await showDateRangePicker(
+                context: context,
+                firstDate: DateTime(2020),
+                lastDate: DateTime.now(),
+                initialDateRange:
+                    _selectedDateRange ??
+                    DateTimeRange(
+                      start: DateTime.now().subtract(const Duration(days: 7)),
+                      end: DateTime.now(),
+                    ),
+              );
+              if (picked != null) {
+                setState(() {
+                  _dateFilterType = 'range';
+                  _selectedDateRange = picked;
+                  _selectedDate = null; // clear single day
+                });
+              }
+            },
+            child: Container(
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.date_range, size: 20, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _dateFilterType == 'range' && _selectedDateRange != null
+                          ? "${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month} - ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}"
+                          : _dateFilterType == 'week'
+                          ? "هذا الأسبوع"
+                          : _dateFilterType == 'month'
+                          ? "هذا الشهر"
+                          : _selectedDate != null
+                          ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                          : 'جميع التواريخ',
+                      style: TextStyle(color: Colors.black, fontSize: 14),
+                    ),
+                  ),
+                  if (_dateFilterType != 'all')
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _dateFilterType = 'all';
+                          _selectedDateRange = null;
+                          _selectedDate = null;
+                        });
+                      },
+                      child: const Icon(
+                        Icons.clear,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                ],
               ),
             ),
-            if (_selectedDate != null)
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedDate = null;
-                  });
-                },
-                child: const Icon(Icons.clear, size: 16, color: Colors.grey),
-              ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(width: 8),
+        PopupMenuButton<String>(
+          onSelected: (value) {
+            setState(() {
+              _dateFilterType = value;
+              if (value == 'week') {
+                final now = DateTime.now();
+                final startOfWeek = now.subtract(
+                  Duration(days: now.weekday - 1),
+                );
+                _selectedDateRange = DateTimeRange(
+                  start: startOfWeek,
+                  end: now,
+                );
+              } else if (value == 'month') {
+                final now = DateTime.now();
+                final startOfMonth = DateTime(now.year, now.month, 1);
+                _selectedDateRange = DateTimeRange(
+                  start: startOfMonth,
+                  end: now,
+                );
+              } else {
+                _selectedDateRange = null;
+              }
+            });
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(value: 'week', child: Text('هذا الأسبوع')),
+            const PopupMenuItem(value: 'month', child: Text('هذا الشهر')),
+          ],
+          child: const Icon(Icons.more_vert),
+        ),
+      ],
     );
   }
 
@@ -660,7 +726,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
       // Filter by date if selected
       List<TaskResultModel> filteredResults = results;
-      if (_selectedDate != null) {
+
+      if (_dateFilterType == 'day' && _selectedDate != null) {
         final selectedDateStr = _selectedDate!.toIso8601String().substring(
           0,
           10,
@@ -668,6 +735,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         filteredResults = results
             .where((result) => result.date == selectedDateStr)
             .toList();
+      } else if ((_dateFilterType == 'range' ||
+              _dateFilterType == 'week' ||
+              _dateFilterType == 'month') &&
+          _selectedDateRange != null) {
+        filteredResults = results.where((result) {
+          final resultDate = DateTime.parse(result.date);
+          return resultDate.isAfter(
+                _selectedDateRange!.start.subtract(const Duration(days: 1)),
+              ) &&
+              resultDate.isBefore(
+                _selectedDateRange!.end.add(const Duration(days: 1)),
+              );
+        }).toList();
       }
 
       // Calculate total points

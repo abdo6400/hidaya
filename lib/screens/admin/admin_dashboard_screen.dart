@@ -39,8 +39,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           // Quick Actions
           SliverToBoxAdapter(child: _buildQuickActionsSection()),
 
-          // Recent Groups
-          SliverToBoxAdapter(child: _buildRecentGroupsSection()),
+          // // Recent Groups
+          // SliverToBoxAdapter(child: _buildRecentGroupsSection()),
         ],
       ),
     );
@@ -180,36 +180,36 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
           const SizedBox(height: 16),
           QuickActionsGrid(
             actions: [
-              QuickActionButton(
-                title: 'إضافة محفظ',
-                icon: Icons.person_add,
-                onTap: () => _navigateToSheikhs(),
-                color: AppTheme.primaryColor,
-              ),
-              QuickActionButton(
-                title: 'إنشاء فئة',
-                icon: Icons.category,
-                onTap: () => _navigateToCategories(),
-                color: AppTheme.successColor,
-              ),
+              // QuickActionButton(
+              //   title: 'إضافة محفظ',
+              //   icon: Icons.person_add,
+              //   onTap: () => _navigateToSheikhs(),
+              //   color: AppTheme.primaryColor,
+              // ),
+              // QuickActionButton(
+              //   title: 'إنشاء فئة',
+              //   icon: Icons.category,
+              //   onTap: () => _navigateToCategories(),
+              //   color: AppTheme.successColor,
+              // ),
               QuickActionButton(
                 title: 'إدارة المجموعات',
                 icon: Icons.groups,
                 onTap: () => _navigateToGroups(),
                 color: AppTheme.warningColor,
               ),
-              QuickActionButton(
-                title: 'إضافة مهمة',
-                icon: Icons.task,
-                onTap: () => _navigateToTasks(),
-                color: AppTheme.accentColor,
-              ),
-              QuickActionButton(
-                title: 'إضافة ولي أمر',
-                icon: Icons.person,
-                onTap: () => _navigateToParents(),
-                color: AppTheme.infoColor,
-              ),
+              // QuickActionButton(
+              //   title: 'إضافة مهمة',
+              //   icon: Icons.task,
+              //   onTap: () => _navigateToTasks(),
+              //   color: AppTheme.accentColor,
+              // ),
+              // QuickActionButton(
+              //   title: 'إضافة ولي أمر',
+              //   icon: Icons.person,
+              //   onTap: () => _navigateToParents(),
+              //   color: AppTheme.infoColor,
+              // ),
               QuickActionButton(
                 title: 'التقارير',
                 icon: Icons.analytics,

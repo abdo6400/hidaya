@@ -88,6 +88,8 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
       case 1:
         return const ChildrenTab();
       case 2:
+      //   return const GroupScheduleTab();
+      // case 3:
         return const NotificationsTab();
       default:
         return const HomeTab();
@@ -107,6 +109,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
       items: const [
         BottomNavItem(icon: Icons.home, label: 'الرئيسية'),
         BottomNavItem(icon: Icons.child_care, label: 'الأبناء'),
+        // BottomNavItem(icon: Icons.table_chart, label: 'الجدول'),
         BottomNavItem(icon: Icons.notifications, label: 'الإشعارات'),
       ],
     );
@@ -119,6 +122,8 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
       case 1:
         return 'الأبناء';
       case 2:
+        return 'الجدول';
+      case 3:
         return 'الإشعارات';
       default:
         return 'الرئيسية';
