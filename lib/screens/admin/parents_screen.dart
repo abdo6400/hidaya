@@ -82,9 +82,10 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
           SliverToBoxAdapter(
             child: parentsAsync.when(
               data: (parents) {
-                final parentUsers = parents
-                    .where((user) => user.role == UserRole.parent)
-                    .toList();
+                final parentUsers = parents.where((user) {
+                  return user.role == UserRole.parent;
+                }).toList();
+
                 return childrenAsync.when(
                   data: (children) {
                     final totalChildren = children.length;
@@ -1177,22 +1178,24 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
                     children: [
                       TextButton.icon(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close),
+
                         label: const Text('إغلاق'),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.grey[600],
                         ),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () => _showAddChildDialog(parent),
-                        icon: const Icon(Icons.person_add),
-                        label: const Text('إضافة طالب جديد'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.secondaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showAddChildDialog(parent),
+                          icon: const Icon(Icons.person_add),
+                          label: const Text('إضافة طالب جديد'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.secondaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
                           ),
                         ),
                       ),
@@ -1308,9 +1311,8 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
       onCancelBtnTap: () => Navigator.pop(context),
       onConfirmBtnTap: () async {
         try {
-          await ref
-              .read(usersControllerProvider.notifier)
-              .deleteUser(parent.id);
+          await AuthService().deleteAccount(userId: parent.id);
+          ref.read(childrenControllerProvider.notifier).deleteChild(parent.id);
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1441,7 +1443,7 @@ class _ParentsScreenState extends ConsumerState<ParentsScreen> {
 
                     final child = ChildModel(
                       id: '',
-                      name: nameController.text,
+                      name: "${nameController.text} ${parent.name}",
                       age: age.toString(),
                       parentId: parent.id,
                       isApproved: true, // Auto-approve when added by admin

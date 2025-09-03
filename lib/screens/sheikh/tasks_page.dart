@@ -469,7 +469,7 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
       // Preload drafts to reflect existing results values
       byTask.forEach((taskId, result) {
         if (result.taskType == 'yesno') {
-          _taskNotesDraft[taskId] = (result.points == 1) ? 'yes' : 'no';
+          _taskNotesDraft[taskId] = (result.points == 2) ? 'yes' : 'no';
         } else if (result.taskType == 'custom') {
           _taskNotesDraft[taskId] = result.notes ?? '';
         } else {
@@ -703,7 +703,7 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
 
         if (task.type == TaskType.yesNo) {
           notes = _taskNotesDraft[taskId] ?? 'no';
-          points = notes == 'yes' ? 1 : 0;
+          points = notes == 'yes' ? 2 : 0;
         } else if (task.type == TaskType.custom) {
           notes = _taskNotesDraft[taskId];
           points = 0;
@@ -908,14 +908,4 @@ class _SheikhTasksPageState extends ConsumerState<SheikhTasksPage> {
     }
   }
 
-  String _getTaskTypeLabel(TaskModel task) {
-    switch (task.type) {
-      case TaskType.points:
-        return 'نقاط (الحد الأقصى ${task.maxPoints})';
-      case TaskType.yesNo:
-        return 'نعم/لا';
-      case TaskType.custom:
-        return 'ملاحظة مخصصة';
-    }
-  }
 }

@@ -24,7 +24,7 @@ class DashboardStatsCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor,
           borderRadius: BorderRadius.circular(20),
@@ -100,28 +100,7 @@ class DashboardStatsCard extends StatelessWidget {
                 ),
               ),
             
-            // Trend indicator (optional)
-            if (onTap != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'عرض التفاصيل',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[500],
-                      fontWeight: FontWeight.w500,
-                      fontSize: 11,
-                    ),
-                  ),  const SizedBox(width: 4),
-                   Icon(
-                    Icons.arrow_forward_ios,
-                    size: 14,
-                    color: Colors.grey[400],
-                  ),
-                ],
-              ),
-            ],
+            
           ],
         ),
       ),
@@ -143,9 +122,9 @@ class DashboardStatsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.count(
       crossAxisCount: crossAxisCount,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.05,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: 1.5,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       children: cards,

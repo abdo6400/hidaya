@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import '../models/child_model.dart';
 import '../models/schedule_group_model.dart';
 import '../models/task_model.dart';
+import '../models/task_result_model.dart';
 
 // Firebase service provider
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
@@ -83,4 +84,10 @@ final tasksForGroupProvider = FutureProvider.family<List<TaskModel>, String>((re
   final List<TaskModel> categoryTasks = all.where((t) => t.categoryId == group.categoryId).toList();
   final List<TaskModel> globalTasks = all.where((t) => t.categoryId == null || (t.categoryId != null && t.categoryId!.isEmpty)).toList();
   return [...categoryTasks, ...globalTasks];
+});
+
+// Task results by child provider
+final taskResultsByChildProvider = FutureProvider.family<List<TaskResultModel>, String>((ref, childId) async {
+  final firebaseService = ref.read(firebaseServiceProvider);
+  return await firebaseService.getTaskResultsByChild(childId);
 });

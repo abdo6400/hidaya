@@ -164,7 +164,7 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            'ملف ${widget.child.name}',
+            widget.child.name,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
 
@@ -484,75 +484,52 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
 
   Widget _buildTableView() {
     return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SingleChildScrollView(
-        child: DataTable(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                blurRadius: 10,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          headingRowColor: MaterialStateProperty.all(
-            AppTheme.primaryColor.withOpacity(0.1),
-          ),
-          columns: const [
-            DataColumn(
-              label: Text(
-                'عنوان المهمة',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            DataColumn(
-              label: Text(
-                'النتيجة',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            DataColumn(
-              label: Text(
-                'ملاحظات',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+      child: DataTable(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: Offset(0, 3),
             ),
           ],
-          rows: _filteredResults.map((result) {
-            return DataRow(
-              cells: [
-                DataCell(
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 200),
-                    child: Text(
-                      result.taskTitle ?? 'بدون',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-                DataCell(_buildResultCell(result)),
-                DataCell(
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 150),
-                    child: Text(
-                      result.notes ?? '-',
-                      style: TextStyle(
-                        color: result.notes?.isNotEmpty == true
-                            ? Colors.grey[700]
-                            : Colors.grey[400],
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
         ),
+        headingRowColor: MaterialStateProperty.all(
+          AppTheme.primaryColor.withOpacity(0.1),
+        ),
+        columns: const [
+          DataColumn(
+            label: Text(
+              'عنوان المهمة',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          DataColumn(
+            label: Text(
+              'النتيجة',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+        rows: _filteredResults.map((result) {
+          return DataRow(
+            cells: [
+              DataCell(
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 200),
+                  child: Text(
+                    result.taskTitle ?? 'بدون',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              DataCell(_buildResultCell(result)),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -645,8 +622,6 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
                             textAlign: TextAlign.center,
                           ),
                         ),
-                        
-                        
 
                         // Tasks columns
                         ..._getWeekTasks().map(
@@ -715,7 +690,7 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
                               textAlign: TextAlign.center,
                             ),
                           ),
-                            
+
                           // Tasks columns
                           ..._getWeekTasks().map((task) {
                             final result = _getResultForDateAndTask(
@@ -865,7 +840,7 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
           ],
         ),
         child: Text(
-          result.points == 1 ? 'نعم' : 'لا',
+          result.points == 2 ? 'نعم' : 'لا',
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -890,7 +865,7 @@ class _ChildProfilePageState extends ConsumerState<ChildProfilePage> {
           ],
         ),
         child: Text(
-          'ملاحظة',
+          result.notes ?? "-",
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,

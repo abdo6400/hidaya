@@ -43,7 +43,7 @@ class CustomBottomNavBar extends StatelessWidget {
               final index = entry.key;
               final item = entry.value;
               final isSelected = index == currentIndex;
-              
+
               return Expanded(
                 child: _buildNavItem(
                   item: item,
@@ -70,9 +70,9 @@ class CustomBottomNavBar extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected 
+          color: isSelected
               ? AppTheme.primaryColor.withOpacity(0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
@@ -92,9 +92,7 @@ class CustomBottomNavBar extends StatelessWidget {
               curve: Curves.easeInOut,
               padding: EdgeInsets.all(isSelected ? 5 : 3),
               decoration: BoxDecoration(
-                color: isSelected 
-                    ? AppTheme.primaryColor 
-                    : Colors.transparent,
+                color: isSelected ? AppTheme.primaryColor : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: isSelected
                     ? [
@@ -108,37 +106,29 @@ class CustomBottomNavBar extends StatelessWidget {
               ),
               child: Icon(
                 item.icon,
-                color: isSelected 
-                    ? Colors.white 
+                color: isSelected
+                    ? Colors.white
                     : AppTheme.primaryColor.withOpacity(0.6),
-                size: isSelected ? 18 : 18,
+                size: isSelected ? 15 : 15,
               ),
             ),
-            
 
-            
             // Label with animation
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 300),
               style: TextStyle(
-                color: isSelected 
-                    ? AppTheme.primaryColor 
-                    : Colors.grey[600],
-                fontSize: isSelected ? 10 : 9,
-                fontWeight: isSelected 
-                    ? FontWeight.w600 
-                    : FontWeight.w500,
+                color: isSelected ? AppTheme.primaryColor : Colors.grey[600],
+                fontSize: isSelected ? 9 : 9,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
               child: Text(
                 item.label,
                 textAlign: TextAlign.center,
                 maxLines: 1,
+
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            
-           
-           
           ],
         ),
       ),
@@ -151,80 +141,31 @@ class BottomNavItem {
   final String label;
   final String? route;
 
-  const BottomNavItem({
-    required this.icon,
-    required this.label,
-    this.route,
-  });
+  const BottomNavItem({required this.icon, required this.label, this.route});
 }
 
 // Predefined navigation items for different roles
 class BottomNavItems {
   // Admin navigation items
   static const List<BottomNavItem> admin = [
-    BottomNavItem(
-      icon: Icons.dashboard_customize,
-      label: 'لوحة التحكم',
-    ),
-    BottomNavItem(
-      icon: Icons.group_add,
-      label: 'المحفظين',
-    ),
-    BottomNavItem(
-      icon: Icons.category_rounded,
-      label: 'الفئات',
-    ),
-    BottomNavItem(
-      icon: Icons.task,
-      label: 'المهام',
-    ),
-    BottomNavItem(
-      icon: Icons.person,
-      label: 'أولياء الأمور',
-    ),
+    BottomNavItem(icon: Icons.dashboard_customize, label: 'لوحة التحكم'),
+    BottomNavItem(icon: Icons.group_add, label: 'المحفظين'),
+    BottomNavItem(icon: Icons.category_rounded, label: 'الفئات'),
+    BottomNavItem(icon: Icons.task, label: 'المهام'),
+    BottomNavItem(icon: Icons.person, label: 'أولياء الأمور'),
   ];
 
   // Sheikh navigation items
   static const List<BottomNavItem> sheikh = [
-    BottomNavItem(
-      icon: Icons.home,
-      label: 'الرئيسية',
-    ),
-    BottomNavItem(
-      icon: Icons.people,
-      label: 'الطلاب',
-    ),
-    BottomNavItem(
-      icon: Icons.assignment,
-      label: 'المهام',
-    ),
-    BottomNavItem(
-      icon: Icons.analytics,
-      label: 'التقارير',
-    ),
-    BottomNavItem(
-      icon: Icons.schedule,
-      label: 'الجدول',
-    ),
+    BottomNavItem(icon: Icons.home, label: 'الرئيسية'),
+    BottomNavItem(icon: Icons.people, label: 'الطلاب'),
+    BottomNavItem(icon: Icons.assignment, label: 'المهام'),
   ];
 
   // Parent navigation items
   static const List<BottomNavItem> parent = [
-    BottomNavItem(
-      icon: Icons.home,
-      label: 'الرئيسية',
-    ),
-    BottomNavItem(
-      icon: Icons.child_care,
-      label: 'الأبناء',
-    ),
-    BottomNavItem(
-      icon: Icons.trending_up,
-      label: 'التقدم',
-    ),
-    BottomNavItem(
-      icon: Icons.notifications,
-      label: 'الإشعارات',
-    ),
+    BottomNavItem(icon: Icons.home, label: 'الرئيسية'),
+    BottomNavItem(icon: Icons.child_care, label: 'الأبناء'),
+    BottomNavItem(icon: Icons.notifications, label: 'الإشعارات'),
   ];
 }

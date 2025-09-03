@@ -4,9 +4,9 @@ import 'package:hidaya/controllers/auth_controller.dart';
 import 'package:hidaya/models/user_model.dart';
 import 'package:hidaya/utils/constants.dart';
 import 'package:hidaya/utils/app_theme.dart';
-import 'pages/home_page.dart';
-import 'pages/students_page.dart';
-import 'pages/tasks_page.dart';
+import 'home_page.dart';
+import 'students_page.dart';
+import 'tasks_page.dart';
 
 class SheikhScreen extends ConsumerStatefulWidget {
   const SheikhScreen({super.key});

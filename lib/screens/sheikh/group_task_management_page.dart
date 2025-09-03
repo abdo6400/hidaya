@@ -418,7 +418,7 @@ class _GroupTaskManagementPageState
       // Preload drafts to reflect existing results values
       byTask.forEach((taskId, result) {
         if (result.taskType == 'yesno') {
-          _taskNotesDraft[taskId] = (result.points == 1) ? 'yes' : 'no';
+          _taskNotesDraft[taskId] = (result.points == 2) ? 'yes' : 'no';
         } else if (result.taskType == 'custom') {
           _taskNotesDraft[taskId] = result.notes ?? '';
         } else {
@@ -651,7 +651,7 @@ class _GroupTaskManagementPageState
 
         if (task.type == TaskType.yesNo) {
           notes = _taskNotesDraft[taskId] ?? 'no';
-          points = notes == 'yes' ? 1 : 0;
+          points = notes == 'yes' ? 2 : 0;
         } else if (task.type == TaskType.custom) {
           notes = _taskNotesDraft[taskId];
           points = 0;

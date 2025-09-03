@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/providers/firebase_providers.dart';
 import 'package:hidaya/utils/app_theme.dart';
-import 'package:hidaya/screens/sheikh/pages/child_profile_page.dart';
+import 'package:hidaya/screens/child/child_profile_page.dart';
 
 class SheikhStudentsPage extends ConsumerStatefulWidget {
   final String sheikhId;

@@ -10,6 +10,8 @@ import 'package:hidaya/widgets/loading_indicator.dart';
 import 'package:hidaya/widgets/error_widget.dart' as app_error;
 import 'package:quickalert/quickalert.dart';
 
+import '../../providers/firebase_providers.dart';
+
 class SheikhsScreen extends ConsumerStatefulWidget {
   const SheikhsScreen({super.key});
 
@@ -657,7 +659,7 @@ class _SheikhsScreenState extends ConsumerState<SheikhsScreen> {
 
       // Refresh the sheikhs list
       ref.read(sheikhsControllerProvider.notifier).loadItems();
-
+      ref.refresh(dashboardStatsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تم إضافة المحفظ "$name" بنجاح'),

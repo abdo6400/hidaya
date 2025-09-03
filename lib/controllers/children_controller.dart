@@ -5,8 +5,8 @@ import 'base_controller.dart';
 
 final childrenControllerProvider =
     StateNotifierProvider<ChildrenController, AsyncValue<List<ChildModel>>>(
-  (ref) => ChildrenController(FirebaseService()),
-);
+      (ref) => ChildrenController(FirebaseService()),
+    );
 
 class ChildrenController extends BaseController<ChildModel> {
   final FirebaseService _firebaseService;
@@ -28,7 +28,9 @@ class ChildrenController extends BaseController<ChildModel> {
 
   @override
   Future<void> updateItem(ChildModel item) async {
-    await handleOperation(() => _firebaseService.updateChild(item.id, item.toMap()));
+    await handleOperation(
+      () => _firebaseService.updateChild(item.id, item.toMap()),
+    );
   }
 
   @override
@@ -42,7 +44,9 @@ class ChildrenController extends BaseController<ChildModel> {
   }
 
   Future<void> approveChild(String childId) async {
-    await handleOperation(() => _firebaseService.updateChild(childId, {'isApproved': true}));
+    await handleOperation(
+      () => _firebaseService.updateChild(childId, {'isApproved': true}),
+    );
   }
 
   // Legacy method names for backward compatibility
@@ -50,4 +54,13 @@ class ChildrenController extends BaseController<ChildModel> {
   Future<void> addChild(ChildModel child) => addItem(child);
   Future<void> updateChild(ChildModel child) => updateItem(child);
   Future<void> deleteChild(String childId) => deleteItem(childId);
+  Future<void> deleteChildren(String parentId) async {
+    final children = await _firebaseService.getChildrenByParent(parentId);
+
+    await handleOperation(() async {
+      for (final child in children) {
+        await _firebaseService.deleteChild(child.id);
+      }
+    });
+  }
 }

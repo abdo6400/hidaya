@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hidaya/providers/firebase_providers.dart';
 import 'package:hidaya/utils/app_theme.dart';
-import 'package:hidaya/screens/sheikh/pages/group_task_management_page.dart';
+import 'package:hidaya/screens/sheikh/group_task_management_page.dart';
 
 class SheikhHomePage extends ConsumerWidget {
   final String sheikhId;
