@@ -433,7 +433,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() {
                   _selectedFilter = value!;
                 });
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(true);
               },
             ),
             RadioListTile<String>(
@@ -444,7 +444,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() {
                   _selectedFilter = value!;
                 });
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(true);
               },
             ),
             RadioListTile<String>(
@@ -455,14 +455,14 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() {
                   _selectedFilter = value!;
                 });
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(true);
               },
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(true),
             child: const Text('إلغاء'),
           ),
         ],
@@ -473,17 +473,17 @@ class _TasksScreenState extends State<TasksScreen> {
   void _showDeleteDialog(Task task) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('تأكيد الحذف'),
         content: Text('هل أنت متأكد من حذف المهمة "${task.name}"؟'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('إلغاء'),
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              Navigator.of(ctx).pop(true);
               context.read<TasksBloc>().add(DeleteTask(task.id));
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

@@ -12,12 +12,7 @@ class AddResultForm extends StatefulWidget {
   final String? taskId; // Pre-select task if coming from task screen
   final Result? result; // For editing existing result
 
-  const AddResultForm({
-    super.key,
-    this.studentId,
-    this.taskId,
-    this.result,
-  });
+  const AddResultForm({super.key, this.studentId, this.taskId, this.result});
 
   static Future<void> showAsDialog(
     BuildContext context, {
@@ -27,13 +22,11 @@ class AddResultForm extends StatefulWidget {
   }) {
     return showDialog<void>(
       context: context,
-      builder: (context) => Dialog(
+      builder: (ctx) => Dialog(
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          width: MediaQuery.of(ctx).size.width * 0.9,
+          height: MediaQuery.of(ctx).size.height * 0.85,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: AddResultForm(
@@ -83,17 +76,15 @@ class _AddResultFormState extends State<AddResultForm> {
         if (mounted && state is TasksLoaded) {
           setState(() {
             _tasks = state.tasks;
-            
+
             // Pre-select task if provided
             if (widget.taskId != null) {
               _selectedTask = _tasks.firstWhere(
                 (task) => task.id == widget.taskId,
-              
               );
             } else if (widget.result?.taskId != null) {
               _selectedTask = _tasks.firstWhere(
                 (task) => task.id == widget.result!.taskId,
-              
               );
             } else {
               _selectedTask = _tasks.isNotEmpty ? _tasks.first : null;
@@ -133,226 +124,222 @@ class _AddResultFormState extends State<AddResultForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-                    // Result Title - only for graded tasks
-                    if (_selectedTask?.type == TaskType.graded)
-                      Column(
-                        children: [
-                          FormBuilderTextField(
-                            name: 'title',
-                            initialValue: widget.result?.title ?? '',
-                            decoration: const InputDecoration(
-                              labelText: AppStrings.resultTitle,
-                              hintText: 'أدخل عنوان النتيجة',
-                              prefixIcon: Icon(Icons.title),
-                            ),
-                            validator: FormBuilderValidators.compose([
-                              FormBuilderValidators.required(
-                                errorText: AppStrings.requiredField,
-                              ),
-                              FormBuilderValidators.minLength(
-                                2,
-                                errorText: AppStrings.nameTooShort,
-                              ),
-                            ]),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      )
-                    else
-                      // Hidden field for attendance tasks
-                      FormBuilderField<String>(
-                        name: 'title',
-                        initialValue: widget.result?.title ?? 'حضور',
-                        builder: (field) => const SizedBox.shrink(),
-                      ),
-
-                    // Student Selection
-                    if (widget.studentId == null && widget.result?.studentId == null)
-                      Column(
-                        children: [
-                          FormBuilderDropdown<String>(
-                            name: 'studentId',
-                            initialValue: _students.isNotEmpty ? _students.first.id : null,
-                            decoration: const InputDecoration(
-                              labelText: AppStrings.studentName,
-                              prefixIcon: Icon(Icons.person),
-                            ),
-                            items: _students.map((student) {
-                              return DropdownMenuItem(
-                                value: student.id,
-                                child: Text(student.name),
-                              );
-                            }).toList(),
-                            validator: FormBuilderValidators.required(
-                              errorText: AppStrings.requiredField,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      )
-                    else
-                      // Add hidden field for pre-selected student
-                      FormBuilderField<String>(
-                        name: 'studentId',
-                        initialValue: widget.studentId ?? widget.result?.studentId,
-                        builder: (field) => const SizedBox.shrink(),
-                      ),
-                    // Show student name if pre-selected
-                    if (widget.studentId != null || widget.result?.studentId != null) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppStrings.studentName,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _students.firstWhere(
-                                (s) => s.id == (widget.studentId ?? widget.result?.studentId),
-                                orElse: () => Student(
-                                  id: '',
-                                  name: 'غير محدد',
-                                  sheikhId: '',
-                                  groupId: '',
-                                  createdAt: DateTime.now(),
-                                  updatedAt: DateTime.now(),
-                                ),
-                              ).name,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // Task Selection
-                    FormBuilderDropdown<String>(
-                      name: 'taskId',
-                      initialValue: _getInitialTaskId(),
-                      decoration: const InputDecoration(
-                        labelText: AppStrings.taskName,
-                        prefixIcon: Icon(Icons.assignment),
-                      ),
-                      items: _tasks.map((task) {
-                        return DropdownMenuItem(
-                          value: task.id,
-                          child: Text(task.name),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedTask = _tasks.firstWhere(
-                            (task) => task.id == value,
-                            orElse: () => _tasks.first,
-                          );
-                        });
-                      },
-                      validator: FormBuilderValidators.required(
-                        errorText: AppStrings.requiredField,
-                      ),
+          // Result Title - only for graded tasks
+          if (_selectedTask?.type == TaskType.graded)
+            Column(
+              children: [
+                FormBuilderTextField(
+                  name: 'title',
+                  initialValue: widget.result?.title ?? '',
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.resultTitle,
+                    hintText: 'أدخل عنوان النتيجة',
+                    prefixIcon: Icon(Icons.title),
+                  ),
+                  validator: FormBuilderValidators.compose([
+                    FormBuilderValidators.required(
+                      errorText: AppStrings.requiredField,
                     ),
-                    const SizedBox(height: 16),
-
-                    // Result Input (Score or Attendance)
-                    if (_selectedTask?.type == TaskType.graded)
-                      FormBuilderTextField(
-                        name: 'score',
-                        initialValue: widget.result?.score?.toString() ?? '',
-                        decoration: InputDecoration(
-                          labelText: AppStrings.result,
-                          hintText: 'أدخل الدرجة (0 - ${_selectedTask?.maxScore?.toStringAsFixed(1) ?? '100'})',
-                          prefixIcon: const Icon(Icons.grade),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(
-                            errorText: AppStrings.requiredField,
-                          ),
-                          FormBuilderValidators.numeric(
-                            errorText: AppStrings.invalidScore,
-                          ),
-                          FormBuilderValidators.min(
-                            0,
-                            errorText: 'الدرجة يجب أن تكون أكبر من أو تساوي 0',
-                          ),
-                          if (_selectedTask?.maxScore != null)
-                            FormBuilderValidators.max(
-                              _selectedTask!.maxScore!,
-                              errorText: 'الدرجة يجب أن تكون أقل من أو تساوي ${_selectedTask!.maxScore!.toStringAsFixed(1)}',
-                            ),
-                        ]),
-                      )
-                    else
-                      FormBuilderDropdown<bool>(
-                        name: 'attendance',
-                        initialValue: widget.result?.attendance ?? true,
-                        decoration: const InputDecoration(
-                          labelText: AppStrings.result,
-                          prefixIcon: Icon(Icons.check_circle),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: true,
-                            child: Text(AppStrings.yes),
-                          ),
-                          DropdownMenuItem(
-                            value: false,
-                            child: Text(AppStrings.no),
-                          ),
-                        ],
-                        validator: FormBuilderValidators.required(
-                          errorText: AppStrings.requiredField,
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-
-                    // Date
-                    FormBuilderDateTimePicker(
-                      name: 'date',
-                      initialValue: widget.result?.date ?? DateTime.now(),
-                      decoration: const InputDecoration(
-                        labelText: AppStrings.date,
-                        prefixIcon: Icon(Icons.calendar_today),
-                      ),
-                      inputType: InputType.date,
-                      validator: FormBuilderValidators.required(
-                        errorText: AppStrings.requiredField,
-                      ),
+                    FormBuilderValidators.minLength(
+                      2,
+                      errorText: AppStrings.nameTooShort,
                     ),
-                    const SizedBox(height: 24),
-
-                    // Action Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text(AppStrings.cancel),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: _saveResult,
-                            child: const Text(AppStrings.save),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ]),
                 ),
+                const SizedBox(height: 16),
+              ],
+            )
+          else
+            // Hidden field for attendance tasks
+            FormBuilderField<String>(
+              name: 'title',
+              initialValue: widget.result?.title ?? 'حضور',
+              builder: (field) => const SizedBox.shrink(),
+            ),
+
+          // Student Selection
+          if (widget.studentId == null && widget.result?.studentId == null)
+            Column(
+              children: [
+                FormBuilderDropdown<String>(
+                  name: 'studentId',
+                  initialValue: _students.isNotEmpty
+                      ? _students.first.id
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: AppStrings.studentName,
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                  items: _students.map((student) {
+                    return DropdownMenuItem(
+                      value: student.id,
+                      child: Text(student.name),
+                    );
+                  }).toList(),
+                  validator: FormBuilderValidators.required(
+                    errorText: AppStrings.requiredField,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            )
+          else
+            // Add hidden field for pre-selected student
+            FormBuilderField<String>(
+              name: 'studentId',
+              initialValue: widget.studentId ?? widget.result?.studentId,
+              builder: (field) => const SizedBox.shrink(),
+            ),
+          // Show student name if pre-selected
+          if (widget.studentId != null || widget.result?.studentId != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppStrings.studentName,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _students
+                        .firstWhere(
+                          (s) =>
+                              s.id ==
+                              (widget.studentId ?? widget.result?.studentId),
+                          orElse: () => Student(
+                            id: '',
+                            name: 'غير محدد',
+                            sheikhId: '',
+                            sheikhName: '',
+                            createdAt: DateTime.now(),
+                            updatedAt: DateTime.now(),
+                          ),
+                        )
+                        .name,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Task Selection
+          FormBuilderDropdown<String>(
+            name: 'taskId',
+            initialValue: _getInitialTaskId(),
+            decoration: const InputDecoration(
+              labelText: AppStrings.taskName,
+              prefixIcon: Icon(Icons.assignment),
+            ),
+            items: _tasks.map((task) {
+              return DropdownMenuItem(value: task.id, child: Text(task.name));
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedTask = _tasks.firstWhere(
+                  (task) => task.id == value,
+                  orElse: () => _tasks.first,
+                );
+              });
+            },
+            validator: FormBuilderValidators.required(
+              errorText: AppStrings.requiredField,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Result Input (Score or Attendance)
+          if (_selectedTask?.type == TaskType.graded)
+            FormBuilderTextField(
+              name: 'score',
+              initialValue: widget.result?.score?.toString() ?? '',
+              decoration: InputDecoration(
+                labelText: AppStrings.result,
+                hintText:
+                    'أدخل الدرجة (0 - ${_selectedTask?.maxScore?.toStringAsFixed(1) ?? '100'})',
+                prefixIcon: const Icon(Icons.grade),
+              ),
+              keyboardType: TextInputType.number,
+              validator: FormBuilderValidators.compose([
+                FormBuilderValidators.required(
+                  errorText: AppStrings.requiredField,
+                ),
+                FormBuilderValidators.numeric(
+                  errorText: AppStrings.invalidScore,
+                ),
+                FormBuilderValidators.min(
+                  0,
+                  errorText: 'الدرجة يجب أن تكون أكبر من أو تساوي 0',
+                ),
+                if (_selectedTask?.maxScore != null)
+                  FormBuilderValidators.max(
+                    _selectedTask!.maxScore!,
+                    errorText:
+                        'الدرجة يجب أن تكون أقل من أو تساوي ${_selectedTask!.maxScore!.toStringAsFixed(1)}',
+                  ),
+              ]),
+            )
+          else
+            FormBuilderDropdown<bool>(
+              name: 'attendance',
+              initialValue: widget.result?.attendance ?? true,
+              decoration: const InputDecoration(
+                labelText: AppStrings.result,
+                prefixIcon: Icon(Icons.check_circle),
+              ),
+              items: const [
+                DropdownMenuItem(value: true, child: Text(AppStrings.yes)),
+                DropdownMenuItem(value: false, child: Text(AppStrings.no)),
+              ],
+              validator: FormBuilderValidators.required(
+                errorText: AppStrings.requiredField,
+              ),
+            ),
+          const SizedBox(height: 16),
+
+          // Date
+          FormBuilderDateTimePicker(
+            name: 'date',
+            initialValue: widget.result?.date ?? DateTime.now(),
+            decoration: const InputDecoration(
+              labelText: AppStrings.date,
+              prefixIcon: Icon(Icons.calendar_today),
+            ),
+            inputType: InputType.date,
+            validator: FormBuilderValidators.required(
+              errorText: AppStrings.requiredField,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text(AppStrings.cancel),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _saveResult,
+                  child: const Text(AppStrings.save),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -360,7 +347,7 @@ class _AddResultFormState extends State<AddResultForm> {
   Widget build(BuildContext context) {
     // Check if we're in a dialog context by looking for a Dialog ancestor
     final isDialog = context.findAncestorWidgetOfExactType<Dialog>() != null;
-    
+
     if (isDialog) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -372,7 +359,9 @@ class _AddResultFormState extends State<AddResultForm> {
               children: [
                 Expanded(
                   child: Text(
-                    widget.result == null ? 'إضافة نتيجة جديدة' : 'تعديل النتيجة',
+                    widget.result == null
+                        ? 'إضافة نتيجة جديدة'
+                        : 'تعديل النتيجة',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -404,7 +393,9 @@ class _AddResultFormState extends State<AddResultForm> {
       // Full screen mode
       return Scaffold(
         appBar: AppBar(
-          title: Text(widget.result == null ? 'إضافة نتيجة جديدة' : 'تعديل النتيجة'),
+          title: Text(
+            widget.result == null ? 'إضافة نتيجة جديدة' : 'تعديل النتيجة',
+          ),
           centerTitle: true,
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.white,
@@ -430,55 +421,41 @@ class _AddResultFormState extends State<AddResultForm> {
   Future<void> _saveResult() async {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
       final formData = _formKey.currentState!.value;
-      
+
       final result = Result(
         id: widget.result?.id ?? FirebaseService.generateId(),
         studentId: formData['studentId'],
         taskId: formData['taskId'],
         title: formData['title'],
-        score: _selectedTask?.type == TaskType.graded 
-            ? double.tryParse(formData['score'] ?? '0') 
+        score: _selectedTask?.type == TaskType.graded
+            ? double.tryParse(formData['score'] ?? '0')
             : null,
-        attendance: _selectedTask?.type == TaskType.attendance 
-            ? formData['attendance'] 
+        attendance: _selectedTask?.type == TaskType.attendance
+            ? formData['attendance']
             : null,
         date: formData['date'],
         createdAt: widget.result?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      try {
-        if (widget.result == null) {
-          context.read<ResultsBloc>().add(AddResult(result));
-        } else {
-          context.read<ResultsBloc>().add(UpdateResult(result));
-        }
-        
-        // Wait a bit for the BLoC to process the event
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        if (mounted) {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.result == null 
-                    ? AppStrings.resultAddedSuccessfully 
-                    : AppStrings.resultUpdatedSuccessfully,
-              ),
-              backgroundColor: AppColors.success,
+      if (widget.result == null) {
+        context.read<ResultsBloc>().add(AddResult(result));
+      } else {
+        context.read<ResultsBloc>().add(UpdateResult(result));
+      }
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.result == null
+                  ? AppStrings.resultAddedSuccessfully
+                  : AppStrings.resultUpdatedSuccessfully,
             ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('خطأ: ${e.toString()}'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
+            backgroundColor: AppColors.success,
+          ),
+        );
       }
     }
   }
@@ -499,10 +476,14 @@ class _AddResultFormState extends State<AddResultForm> {
               Navigator.of(context).pop();
               context.read<ResultsBloc>().add(DeleteResult(widget.result!.id));
               Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(AppStrings.resultDeletedSuccessfully),
+                  backgroundColor: AppColors.success,
+                ),
+              );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text(AppStrings.delete),
           ),
         ],

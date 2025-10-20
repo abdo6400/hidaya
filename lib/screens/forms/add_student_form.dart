@@ -11,11 +11,7 @@ class AddStudentForm extends StatefulWidget {
   final Student? student; // For editing existing student
   final String? groupId; // Pre-select group if coming from group screen
 
-  const AddStudentForm({
-    super.key,
-    this.student,
-    this.groupId,
-  });
+  const AddStudentForm({super.key, this.student, this.groupId});
 
   static Future<void> showAsDialog(
     BuildContext context, {
@@ -24,19 +20,14 @@ class AddStudentForm extends StatefulWidget {
   }) {
     return showDialog<void>(
       context: context,
-      builder: (context) => Dialog(
+      builder: (ctx) => Dialog(
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          height: MediaQuery.of(context).size.height * 0.85,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          width: MediaQuery.of(ctx).size.width * 0.9,
+          height: MediaQuery.of(ctx).size.height * 0.85,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: AddStudentForm(
-              student: student,
-              groupId: groupId,
-            ),
+            child: AddStudentForm(student: student, groupId: groupId),
           ),
         ),
       ),
@@ -51,7 +42,6 @@ class _AddStudentFormState extends State<AddStudentForm> {
   final _formKey = GlobalKey<FormBuilderState>();
   bool _isLoading = false;
   List<Sheikh> _sheikhs = [];
-  List<Group> _groups = [];
 
   @override
   void initState() {
@@ -62,23 +52,12 @@ class _AddStudentFormState extends State<AddStudentForm> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-
       context.read<SheikhsBloc>().add(LoadSheikhs());
       context.read<SheikhsBloc>().stream.listen((state) {
         if (mounted) {
           setState(() {
             if (state is SheikhsLoaded) {
               _sheikhs = state.sheikhs;
-            }
-          });
-        }
-      });
-      context.read<GroupsBloc>().add(LoadGroups());
-      context.read<GroupsBloc>().stream.listen((state) {
-        if (mounted) {
-          setState(() {
-            if (state is GroupsLoaded) {
-              _groups = state.groups;
             }
           });
         }
@@ -93,7 +72,9 @@ class _AddStudentFormState extends State<AddStudentForm> {
   String? _getInitialSheikhId() {
     // If editing and the student's sheikh exists in the list, use it
     if (widget.student?.sheikhId != null) {
-      final sheikhExists = _sheikhs.any((s) => s.id == widget.student!.sheikhId);
+      final sheikhExists = _sheikhs.any(
+        (s) => s.id == widget.student!.sheikhId,
+      );
       if (sheikhExists) {
         return widget.student!.sheikhId;
       }
@@ -102,30 +83,13 @@ class _AddStudentFormState extends State<AddStudentForm> {
     return _sheikhs.isNotEmpty ? _sheikhs.first.id : null;
   }
 
-  String? _getInitialGroupId() {
-    // If editing and the student's group exists in the list, use it
-    if (widget.student?.groupId != null) {
-      final groupExists = _groups.any((g) => g.id == widget.student!.groupId);
-      if (groupExists) {
-        return widget.student!.groupId;
-      }
-    }
-    // If pre-selected group exists in the list, use it
-    if (widget.groupId != null) {
-      final groupExists = _groups.any((g) => g.id == widget.groupId);
-      if (groupExists) {
-        return widget.groupId;
-      }
-    }
-    // Otherwise, use first available group or null
-    return _groups.isNotEmpty ? _groups.first.id : null;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.student == null ? 'إضافة طالب جديد' : 'تعديل الطالب'),
+        title: Text(
+          widget.student == null ? 'إضافة طالب جديد' : 'تعديل الطالب',
+        ),
         centerTitle: true,
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
@@ -192,26 +156,6 @@ class _AddStudentFormState extends State<AddStudentForm> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Group Selection
-                    FormBuilderDropdown<String>(
-                      name: 'groupId',
-                      initialValue: _getInitialGroupId(),
-                      decoration: const InputDecoration(
-                        labelText: AppStrings.group,
-                        prefixIcon: Icon(Icons.groups),
-                      ),
-                      items: _groups.map((group) {
-                        return DropdownMenuItem(
-                          value: group.id,
-                          child: Text(group.name),
-                        );
-                      }).toList(),
-                      validator: FormBuilderValidators.required(
-                        errorText: AppStrings.requiredField,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
                     // Action Buttons
                     Row(
                       children: [
@@ -240,12 +184,12 @@ class _AddStudentFormState extends State<AddStudentForm> {
   Future<void> _saveStudent() async {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
       final formData = _formKey.currentState!.value;
-      
+      final sheikh = _sheikhs.firstWhere((s) => s.id == formData['sheikhId']);
       final student = Student(
         id: widget.student?.id ?? FirebaseService.generateId(),
         name: formData['name'],
         sheikhId: formData['sheikhId'],
-        groupId: formData['groupId'],
+        sheikhName: sheikh.name,
         createdAt: widget.student?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -256,17 +200,17 @@ class _AddStudentFormState extends State<AddStudentForm> {
         } else {
           context.read<StudentsBloc>().add(UpdateStudent(student));
         }
-        
+
         // Wait a bit for the BLoC to process the event
         await Future.delayed(const Duration(milliseconds: 500));
-        
+
         if (mounted) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                widget.student == null 
-                    ? AppStrings.studentAddedSuccessfully 
+                widget.student == null
+                    ? AppStrings.studentAddedSuccessfully
                     : AppStrings.studentUpdatedSuccessfully,
               ),
               backgroundColor: AppColors.success,
@@ -300,12 +244,12 @@ class _AddStudentFormState extends State<AddStudentForm> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              context.read<StudentsBloc>().add(DeleteStudent(widget.student!.id));
+              context.read<StudentsBloc>().add(
+                DeleteStudent(widget.student!.id),
+              );
               Navigator.of(context).pop();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text(AppStrings.delete),
           ),
         ],

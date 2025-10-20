@@ -39,14 +39,6 @@ class DeleteStudent extends StudentsEvent {
   List<Object?> get props => [studentId];
 }
 
-class LoadStudentsByGroup extends StudentsEvent {
-  final String groupId;
-
-  const LoadStudentsByGroup(this.groupId);
-
-  @override
-  List<Object?> get props => [groupId];
-}
 
 class LoadStudentsBySheikh extends StudentsEvent {
   final String sheikhId;
@@ -55,4 +47,13 @@ class LoadStudentsBySheikh extends StudentsEvent {
 
   @override
   List<Object?> get props => [sheikhId];
+}
+
+class RemoveStudentFromSheikh extends StudentsEvent {
+  final String studentId;
+
+  const RemoveStudentFromSheikh(this.studentId);
+
+  @override
+  List<Object?> get props => [studentId];
 }

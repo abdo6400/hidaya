@@ -8,7 +8,6 @@ class FirebaseService {
   // Collections
   static const String studentsCollection = 'students';
   static const String sheikhsCollection = 'sheikhs';
-  static const String groupsCollection = 'groups';
   static const String tasksCollection = 'tasks';
   static const String resultsCollection = 'results';
 
@@ -22,7 +21,6 @@ class FirebaseService {
   // Collection references
   static CollectionReference get studentsRef => _firestore.collection(studentsCollection);
   static CollectionReference get sheikhsRef => _firestore.collection(sheikhsCollection);
-  static CollectionReference get groupsRef => _firestore.collection(groupsCollection);
   static CollectionReference get tasksRef => _firestore.collection(tasksCollection);
   static CollectionReference get resultsRef => _firestore.collection(resultsCollection);
 

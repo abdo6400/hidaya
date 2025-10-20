@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import '../../constants/index.dart';
 import '../../bloc/index.dart';
 import '../../models/index.dart';
@@ -282,6 +283,7 @@ class _StudentDetailsScreenState extends State<StudentDetailsScreen> {
                                   'الحضور: ${result.attendance == true ? 'نعم' : 'لا'}',
                                 ),
                               Text('التاريخ: ${result.date.toString().split(' ')[0]}'),
+                              Text('اليوم: ${DateFormat('EEEE', 'ar_SA').format(result.date)}')
                             ],
                           ),
                           trailing: PopupMenuButton<String>(

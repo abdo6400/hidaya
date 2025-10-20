@@ -39,9 +39,14 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   ) async {
     try {
       await _taskRepository.createTask(event.task);
-      emit(const TaskOperationSuccess('تم إضافة المهمة بنجاح'));
+      // Reload tasks after successful addition
+      await emit.forEach<List<Task>>(
+        _taskRepository.getAllTasks(),
+        onData: (tasks) => TasksLoaded(tasks),
+        onError: (error, stackTrace) => TasksError(error.toString()),
+      );
     } catch (e) {
-      emit(TaskOperationError('فشل في إضافة المهمة: ${e.toString()}'));
+      emit(TasksError('فشل في إضافة المهمة: ${e.toString()}'));
     }
   }
 
@@ -51,9 +56,14 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   ) async {
     try {
       await _taskRepository.updateTask(event.task);
-      emit(const TaskOperationSuccess('تم تحديث المهمة بنجاح'));
+      // Reload tasks after successful update
+      await emit.forEach<List<Task>>(
+        _taskRepository.getAllTasks(),
+        onData: (tasks) => TasksLoaded(tasks),
+        onError: (error, stackTrace) => TasksError(error.toString()),
+      );
     } catch (e) {
-      emit(TaskOperationError('فشل في تحديث المهمة: ${e.toString()}'));
+      emit(TasksError('فشل في تحديث المهمة: ${e.toString()}'));
     }
   }
 
@@ -63,9 +73,14 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
   ) async {
     try {
       await _taskRepository.deleteTask(event.taskId);
-      emit(const TaskOperationSuccess('تم حذف المهمة بنجاح'));
+      // Reload tasks after successful deletion
+      await emit.forEach<List<Task>>(
+        _taskRepository.getAllTasks(),
+        onData: (tasks) => TasksLoaded(tasks),
+        onError: (error, stackTrace) => TasksError(error.toString()),
+      );
     } catch (e) {
-      emit(TaskOperationError('فشل في حذف المهمة: ${e.toString()}'));
+      emit(TasksError('فشل في حذف المهمة: ${e.toString()}'));
     }
   }
 

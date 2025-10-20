@@ -21,7 +21,7 @@ class AddTaskForm extends StatefulWidget {
   }) {
     return showDialog<void>(
       context: context,
-      builder: (context) => Dialog(
+      builder: (ctx) => Dialog(
         child: Container(
           width: MediaQuery.of(context).size.width * 0.9,
           height: MediaQuery.of(context).size.height * 0.7,
@@ -201,38 +201,24 @@ class _AddTaskFormState extends State<AddTaskForm> {
         updatedAt: DateTime.now(),
       );
 
-      try {
-        if (widget.task == null) {
-          context.read<TasksBloc>().add(AddTask(task));
-        } else {
-          context.read<TasksBloc>().add(UpdateTask(task));
-        }
-        
-        // Wait a bit for the BLoC to process the event
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        if (mounted) {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.task == null 
-                    ? AppStrings.taskAddedSuccessfully 
-                    : AppStrings.taskUpdatedSuccessfully,
-              ),
-              backgroundColor: AppColors.success,
+      if (widget.task == null) {
+        context.read<TasksBloc>().add(AddTask(task));
+      } else {
+        context.read<TasksBloc>().add(UpdateTask(task));
+      }
+      
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.task == null 
+                  ? AppStrings.taskAddedSuccessfully 
+                  : AppStrings.taskUpdatedSuccessfully,
             ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('خطأ: ${e.toString()}'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
+            backgroundColor: AppColors.success,
+          ),
+        );
       }
     }
   }
@@ -253,6 +239,12 @@ class _AddTaskFormState extends State<AddTaskForm> {
               Navigator.of(context).pop();
               context.read<TasksBloc>().add(DeleteTask(widget.task!.id));
               Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(AppStrings.taskDeletedSuccessfully),
+                  backgroundColor: AppColors.success,
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,

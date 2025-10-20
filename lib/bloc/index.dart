@@ -23,7 +23,3 @@ export 'sheikhs/sheikhs_bloc.dart';
 export 'sheikhs/sheikhs_event.dart';
 export 'sheikhs/sheikhs_state.dart';
 
-// Groups
-export 'groups/groups_bloc.dart';
-export 'groups/groups_event.dart';
-export 'groups/groups_state.dart';

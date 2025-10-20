@@ -4,6 +4,7 @@ import '../../constants/index.dart';
 import '../../bloc/index.dart';
 import '../../models/index.dart';
 import '../forms/add_sheikh_form.dart';
+import 'sheikh_students_screen.dart';
 
 class SheikhsScreen extends StatefulWidget {
   const SheikhsScreen({super.key});
@@ -222,7 +223,13 @@ class _SheikhsScreenState extends State<SheikhsScreen> {
                 ),
                 PopupMenuButton<String>(
                   onSelected: (value) {
-                    if (value == 'edit') {
+                    if (value == 'students') {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => SheikhStudentsScreen(sheikh: sheikh),
+                        ),
+                      );
+                    } else if (value == 'edit') {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => AddSheikhForm(sheikh: sheikh),
@@ -233,6 +240,16 @@ class _SheikhsScreenState extends State<SheikhsScreen> {
                     }
                   },
                   itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'students',
+                      child: Row(
+                        children: [
+                          Icon(Icons.school, size: 20),
+                          SizedBox(width: 8),
+                          Text('عرض الطلاب'),
+                        ],
+                      ),
+                    ),
                     const PopupMenuItem(
                       value: 'edit',
                       child: Row(

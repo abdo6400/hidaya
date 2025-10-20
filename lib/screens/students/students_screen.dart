@@ -62,12 +62,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
-          ),
-        ],
+       
       ),
       body: BlocBuilder<StudentsBloc, StudentsState>(
         builder: (context, state) {
@@ -231,6 +226,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                                   children: [
                                     Text('المجموع: ${student.totalGradedScore.toStringAsFixed(1)}'),
                                     Text('الحضور: ${student.attendanceCount}'),
+                                    Text('الشيخ: ${student.sheikhName}'),
                                   ],
                                 ),
                                 trailing: PopupMenuButton<String>(
@@ -406,17 +402,17 @@ class _StudentsScreenState extends State<StudentsScreen> {
   void _showDeleteDialog(BuildContext context, String studentId, String studentName) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('تأكيد الحذف'),
         content: Text('هل أنت متأكد من حذف الطالب "$studentName"؟'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              Navigator.of(ctx).pop();
               context.read<StudentsBloc>().add(DeleteStudent(studentId));
             },
             style: ElevatedButton.styleFrom(

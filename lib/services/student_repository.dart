@@ -109,25 +109,12 @@ class StudentRepository {
     }
   }
 
-  // Get students by group
-  Stream<List<Student>> getStudentsByGroup(String groupId) {
-    return _collection
-        .where('groupId', isEqualTo: groupId)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id;
-        return Student.fromMap(data);
-      }).toList();
-    });
-  }
 
   // Get students by sheikh
   Stream<List<Student>> getStudentsBySheikh(String sheikhId) {
     return _collection
         .where('sheikhId', isEqualTo: sheikhId)
+        .where('sheikhId', isNotEqualTo: "")
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
@@ -160,6 +147,19 @@ class StudentRepository {
       });
     } catch (e) {
       throw Exception('Failed to update student attendance: $e');
+    }
+  }
+
+  // Remove student from sheikh (set sheikhId to empty)
+  Future<void> removeStudentFromSheikh(String studentId) async {
+    try {
+      await _collection.doc(studentId).update({
+        'sheikhId': '',
+        'sheikhName': '',
+        'updatedAt': FirebaseService.currentTimestamp,
+      });
+    } catch (e) {
+      throw Exception('Failed to remove student from sheikh: $e');
     }
   }
 }

@@ -5,7 +5,7 @@ class Student extends Equatable {
   final String id;
   final String name;
   final String sheikhId;
-  final String groupId;
+  final String sheikhName;
   final DateTime createdAt;
   final DateTime updatedAt;
   final double totalGradedScore;
@@ -15,7 +15,7 @@ class Student extends Equatable {
     required this.id,
     required this.name,
     required this.sheikhId,
-    required this.groupId,
+    required this.sheikhName,
     required this.createdAt,
     required this.updatedAt,
     this.totalGradedScore = 0.0,
@@ -27,7 +27,7 @@ class Student extends Equatable {
       id: map['id'] ?? '',
       name: map['name'] ?? '',
       sheikhId: map['sheikhId'] ?? '',
-      groupId: map['groupId'] ?? '',
+      sheikhName: map['sheikhName'] ?? '',
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       updatedAt: (map['updatedAt'] as Timestamp).toDate(),
       totalGradedScore: (map['totalGradedScore'] ?? 0.0).toDouble(),
@@ -40,7 +40,8 @@ class Student extends Equatable {
       'id': id,
       'name': name,
       'sheikhId': sheikhId,
-      'groupId': groupId,
+
+      'sheikhName': sheikhName,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'totalGradedScore': totalGradedScore,
@@ -62,7 +63,8 @@ class Student extends Equatable {
       id: id ?? this.id,
       name: name ?? this.name,
       sheikhId: sheikhId ?? this.sheikhId,
-      groupId: groupId ?? this.groupId,
+
+      sheikhName: sheikhName ?? this.sheikhName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       totalGradedScore: totalGradedScore ?? this.totalGradedScore,
@@ -72,13 +74,14 @@ class Student extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        sheikhId,
-        groupId,
-        createdAt,
-        updatedAt,
-        totalGradedScore,
-        attendanceCount,
-      ];
+    id,
+    name,
+    sheikhId,
+
+    sheikhName,
+    createdAt,
+    updatedAt,
+    totalGradedScore,
+    attendanceCount,
+  ];
 }

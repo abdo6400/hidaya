@@ -41,9 +41,14 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
   ) async {
     try {
       await _resultRepository.createResult(event.result);
-      emit(const ResultOperationSuccess('تم إضافة النتيجة بنجاح'));
+      // Reload results after successful addition
+      await emit.forEach<List<Result>>(
+        _resultRepository.getAllResults(),
+        onData: (results) => ResultsLoaded(results),
+        onError: (error, stackTrace) => ResultsError(error.toString()),
+      );
     } catch (e) {
-      emit(ResultOperationError('فشل في إضافة النتيجة: ${e.toString()}'));
+      emit(ResultsError('فشل في إضافة النتيجة: ${e.toString()}'));
     }
   }
 
@@ -53,9 +58,14 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
   ) async {
     try {
       await _resultRepository.updateResult(event.result);
-      emit(const ResultOperationSuccess('تم تحديث النتيجة بنجاح'));
+      // Reload results after successful update
+      await emit.forEach<List<Result>>(
+        _resultRepository.getAllResults(),
+        onData: (results) => ResultsLoaded(results),
+        onError: (error, stackTrace) => ResultsError(error.toString()),
+      );
     } catch (e) {
-      emit(ResultOperationError('فشل في تحديث النتيجة: ${e.toString()}'));
+      emit(ResultsError('فشل في تحديث النتيجة: ${e.toString()}'));
     }
   }
 
@@ -65,9 +75,14 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
   ) async {
     try {
       await _resultRepository.deleteResult(event.resultId);
-      emit(const ResultOperationSuccess('تم حذف النتيجة بنجاح'));
+      // Reload results after successful deletion
+      await emit.forEach<List<Result>>(
+        _resultRepository.getAllResults(),
+        onData: (results) => ResultsLoaded(results),
+        onError: (error, stackTrace) => ResultsError(error.toString()),
+      );
     } catch (e) {
-      emit(ResultOperationError('فشل في حذف النتيجة: ${e.toString()}'));
+      emit(ResultsError('فشل في حذف النتيجة: ${e.toString()}'));
     }
   }
 

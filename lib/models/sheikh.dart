@@ -6,22 +6,18 @@ class Sheikh extends Equatable {
   final String name;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final String? groupId;
 
   const Sheikh({
     required this.id,
     required this.name,
     required this.createdAt,
     required this.updatedAt,
-    this.groupId,
   });
 
   factory Sheikh.fromMap(Map<String, dynamic> map) {
     return Sheikh(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
-      groupId: map['groupId'] ?? '',
-
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       updatedAt: (map['updatedAt'] as Timestamp).toDate(),
     );
@@ -31,10 +27,8 @@ class Sheikh extends Equatable {
     return {
       'id': id,
       'name': name,
-
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
-      'groupId': groupId,
     };
   }
 
@@ -44,12 +38,10 @@ class Sheikh extends Equatable {
 
     DateTime? createdAt,
     DateTime? updatedAt,
-    String? groupId,
   }) {
     return Sheikh(
       id: id ?? this.id,
       name: name ?? this.name,
-      groupId: groupId ?? this.groupId,
 
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -57,5 +49,5 @@ class Sheikh extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, createdAt, updatedAt, groupId];
+  List<Object?> get props => [id, name, createdAt, updatedAt];
 }

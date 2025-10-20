@@ -8,14 +8,14 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
   final StudentRepository _studentRepository;
 
   StudentsBloc({required StudentRepository studentRepository})
-      : _studentRepository = studentRepository,
-        super(const StudentsInitial()) {
+    : _studentRepository = studentRepository,
+      super(const StudentsInitial()) {
     on<LoadStudents>(_onLoadStudents);
     on<AddStudent>(_onAddStudent);
     on<UpdateStudent>(_onUpdateStudent);
     on<DeleteStudent>(_onDeleteStudent);
-    on<LoadStudentsByGroup>(_onLoadStudentsByGroup);
     on<LoadStudentsBySheikh>(_onLoadStudentsBySheikh);
+    on<RemoveStudentFromSheikh>(_onRemoveStudentFromSheikh);
   }
 
   Future<void> _onLoadStudents(
@@ -40,9 +40,13 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
   ) async {
     try {
       await _studentRepository.createStudent(event.student);
-      emit(const StudentOperationSuccess('تم إضافة الطالب بنجاح'));
+      await emit.forEach<List<Student>>(
+        _studentRepository.getAllStudentsWithStats(),
+        onData: (students) => StudentsLoaded(students),
+        onError: (error, stackTrace) => StudentsError(error.toString()),
+      );
     } catch (e) {
-      emit(StudentOperationError('فشل في إضافة الطالب: ${e.toString()}'));
+      emit(StudentsError('فشل في إضافة الطالب: ${e.toString()}'));
     }
   }
 
@@ -52,9 +56,13 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
   ) async {
     try {
       await _studentRepository.updateStudent(event.student);
-      emit(const StudentOperationSuccess('تم تحديث الطالب بنجاح'));
+      await emit.forEach<List<Student>>(
+        _studentRepository.getAllStudentsWithStats(),
+        onData: (students) => StudentsLoaded(students),
+        onError: (error, stackTrace) => StudentsError(error.toString()),
+      );
     } catch (e) {
-      emit(StudentOperationError('فشل في تحديث الطالب: ${e.toString()}'));
+      emit(StudentsError('فشل في تحديث الطالب: ${e.toString()}'));
     }
   }
 
@@ -64,25 +72,13 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
   ) async {
     try {
       await _studentRepository.deleteStudent(event.studentId);
-      emit(const StudentOperationSuccess('تم حذف الطالب بنجاح'));
-    } catch (e) {
-      emit(StudentOperationError('فشل في حذف الطالب: ${e.toString()}'));
-    }
-  }
-
-  Future<void> _onLoadStudentsByGroup(
-    LoadStudentsByGroup event,
-    Emitter<StudentsState> emit,
-  ) async {
-    emit(const StudentsLoading());
-    try {
       await emit.forEach<List<Student>>(
-        _studentRepository.getStudentsByGroup(event.groupId),
+        _studentRepository.getAllStudentsWithStats(),
         onData: (students) => StudentsLoaded(students),
         onError: (error, stackTrace) => StudentsError(error.toString()),
       );
     } catch (e) {
-      emit(StudentsError(e.toString()));
+      emit(StudentsError('فشل في حذف الطالب: ${e.toString()}'));
     }
   }
 
@@ -99,6 +95,20 @@ class StudentsBloc extends Bloc<StudentsEvent, StudentsState> {
       );
     } catch (e) {
       emit(StudentsError(e.toString()));
+    }
+  }
+
+  Future<void> _onRemoveStudentFromSheikh(
+    RemoveStudentFromSheikh event,
+    Emitter<StudentsState> emit,
+  ) async {
+    try {
+      await _studentRepository.removeStudentFromSheikh(event.studentId);
+      emit(const StudentOperationSuccess('تم إزالة الطالب من الشيخ بنجاح'));
+    } catch (e) {
+      emit(
+        StudentOperationError('فشل في إزالة الطالب من الشيخ: ${e.toString()}'),
+      );
     }
   }
 }

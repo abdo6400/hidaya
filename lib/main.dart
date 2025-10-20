@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:go_router/go_router.dart';
-
 import 'firebase_options.dart';
 import 'constants/index.dart';
 import 'bloc/index.dart';
@@ -13,10 +12,9 @@ import 'services/index.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/students/students_screen.dart';
 import 'screens/sheikhs/sheikhs_screen.dart';
-import 'screens/groups/groups_screen.dart';
 import 'screens/tasks/tasks_screen.dart';
 import 'screens/reports/reports_screen.dart';
-import 'screens/settings/settings_screen.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,11 +60,7 @@ class MyApp extends StatelessWidget {
             sheikhRepository: SheikhRepository(),
           ),
         ),
-        BlocProvider<GroupsBloc>(
-          create: (context) => GroupsBloc(
-            groupRepository: GroupRepository(),
-          ),
-        ),
+       
       ],
       child: MaterialApp.router(
         title: AppStrings.appTitle,
@@ -109,10 +103,10 @@ final GoRouter _router = GoRouter(
           path: '/sheikhs',
           builder: (context, state) => const SheikhsScreen(),
         ),
-        GoRoute(
-          path: '/groups',
-          builder: (context, state) => const GroupsScreen(),
-        ),
+        // GoRoute(
+        //   path: '/groups',
+        //   builder: (context, state) => const GroupsScreen(),
+        // ),
         GoRoute(
           path: '/tasks',
           builder: (context, state) => const TasksScreen(),
@@ -161,11 +155,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       label: AppStrings.sheikhs,
       route: '/sheikhs',
     ),
-    NavigationItem(
-      icon: Icons.groups,
-      label: AppStrings.groups,
-      route: '/groups',
-    ),
+    // NavigationItem(
+    //   icon: Icons.groups,
+    //   label: AppStrings.groups,
+    //   route: '/groups',
+    // ),
     NavigationItem(
       icon: Icons.assignment,
       label: AppStrings.tasks,
